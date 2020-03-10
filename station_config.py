@@ -1,0 +1,664 @@
+#!/usr/bin/python
+
+import configparser
+import os
+import time
+import logging
+import json
+import sys
+import argparse
+
+# external lib
+import yaml
+import requests
+from crontab import CronTab
+import logzero
+
+# sensors libs
+from module.ponsel import Ponsel
+
+__author__ = "Daniele Strigaro"
+__email__ = "daniele.strigaro@supsi.ch"
+__license__ = "Apache License, Version 2.0"
+__revision__ = "$Rev: 100 $"
+__date__ = "$Date: 2020-02-19 17:22:30 $"
+__abspath__ = os.path.abspath(os.getcwd())
+__config__ = os.path.join(
+    __abspath__,
+    'default.cfg'
+)
+
+logzero.logfile("station.log", maxBytes=1e6, backupCount=3)
+
+
+class Station():
+
+    def __init__(self):
+        self.logger = logzero.logger
+
+        # reading configuration file default.cfg
+        self.config = configparser.ConfigParser()
+        self.config.read(__config__)
+        self.sections = self.config.sections()
+
+        # istsos variables
+        self.istsos_url = self.config['DEFAULT']['istsos']
+        self.istsos_srv = self.config['DEFAULT']['service']
+        self.istsos_auth = (
+            self.config['DEFAULT']['user'],
+            self.config['DEFAULT']['password']
+        )
+
+        # checking configuration file
+        self.check_default_section()
+
+    def save_config(self):
+        with open(__config__, 'w') as f:
+            self.config.write(f)
+
+    def set_send_data(self):
+        python_path = sys.executable
+
+        path_script = os.path.join(
+            __abspath__,
+            'send_data.py'
+        )
+
+        path_config = os.path.join(
+            __abspath__,
+            'default.cfg'
+        )
+
+        cron = CronTab(
+            user=os.getlogin()
+        )
+        path_log = os.path.join(
+            __abspath__,
+            'log',
+            f'send_data.log'
+        )
+        command = (
+            f'{python_path} {path_script}'
+            f' -c {path_config} >> {path_log} 2>&1'
+        )
+        add_cron = True
+        for job in cron:
+            if command in job.command:
+                add_cron = False
+        if add_cron:
+            job = cron.new(command=command)
+            job.minute.every(
+                self.config['DEFAULT']['sending_time']
+            )
+            cron.write()
+
+    def create_service(self):
+        service_name = self.config['DEFAULT']['service']
+        epsg = '4326'
+        if 'epsg' in self.config['DEFAULT'].keys():
+            epsg = self.config['DEFAULT']['epsg']
+        data_post = {
+            "service": f"{service_name}",
+            "epsg": epsg
+        }
+        req = requests.post(
+            f'{self.istsos_url}/wa/istsos/services',
+            data=json.dumps(data_post),
+            auth=self.istsos_auth
+        )
+        if req.status_code == 200:
+            check_idx = req.text.find("true")
+            if check_idx > 0:
+                return {'success': True}
+            else:
+                check_idx = req.text.find("already exist")
+                if check_idx > 0:
+                    return {'success': True}
+                else:
+                    return {
+                        'success': False,
+                        'msg': req.text
+                    }
+        else:
+            return {
+                'success': False,
+                'msg': req.text
+            }
+
+    def create_service_agg(self, section):
+        service_name = self.config['DEFAULT']['service']
+        epsg = '4326'
+        if 'epsg' in self.config[section].keys():
+            epsg = self.config[section]['epsg']
+        data_post = {
+            "service": f"{service_name}agg",
+            "epsg": epsg
+        }
+        req = requests.post(
+            f'{self.istsos_url}/wa/istsos/services',
+            data=json.dumps(data_post),
+            auth=self.istsos_auth
+        )
+        if req.status_code == 200:
+            check_idx = req.text.find("true")
+            if check_idx > 0:
+                return {'success': True}
+            else:
+                check_idx = req.text.find("already exist")
+                if check_idx > 0:
+                    return {'success': True}
+                else:
+                    return {
+                        'success': False,
+                        'msg': req.text
+                    }
+        else:
+            return {
+                'success': False,
+                'msg': req.text
+            }
+
+    def set_aggregation(self):
+
+        python_path = sys.executable
+
+        path_script = os.path.join(
+            __abspath__,
+            'sensor_agg.py'
+        )
+
+        path_config = os.path.join(
+            __abspath__,
+            'default.cfg'
+        )
+
+        cron = CronTab(
+            user=os.getlogin()
+        )
+        for section in self.sections:
+            add_cron = True
+            if 'aggregation_time' in self.config[section].keys():
+                path_log = os.path.join(
+                    __abspath__,
+                    'log',
+                    f'{section}_agg.log'
+                )
+                command = (
+                    f'{python_path} {path_script} -s {section}'
+                    f' -c {path_config} >> {path_log} 2>&1'
+                )
+
+                add_cron = True
+                for job in cron:
+                    if command in job.command:
+                        add_cron = False
+                if add_cron:
+                    job = cron.new(command=command)
+                    job.minute.every(
+                        self.config[section]['aggregation_time']
+                    )
+                    cron.write()
+
+    def set_sampling(self):
+
+        python_path = sys.executable
+
+        path_script = os.path.join(
+            __abspath__,
+            'sensor_rw.py'
+        )
+
+        path_config = os.path.join(
+            __abspath__,
+            'default.cfg'
+        )
+
+        cron = CronTab(
+            user=os.getlogin()
+        )
+        files_sh = []
+
+        for section in self.sections:
+            if self.config[section].get('assigned_id'):
+                path_log = os.path.join(
+                    __abspath__,
+                    'log',
+                    f'{section}.log'
+                )
+                command = (
+                    f'{python_path} {path_script} -s {section}'
+                    f' -c {path_config} >> {path_log} 2>&1'
+                )
+                sampling_time = self.config[section]['sampling_time']
+                shell_path = os.path.join(
+                    __abspath__,
+                    f'read_{sampling_time}.sh'
+                )
+                with open(shell_path, 'a') as f:
+                    f.write(f'{command}\n')
+                if shell_path not in files_sh:
+                    files_sh.append(shell_path)
+
+        for sh in files_sh:
+            add_cron = True
+            for job in cron:
+                if sh in job.command:
+                    add_cron = False
+            if add_cron:
+                job = cron.new(command=f"sh {sh}")
+                every = sh.split('_')[-1].split('.')[0]
+                job.minute.every(int(every))
+                cron.write()
+
+    def insert_sensor(self, sensor, section, agg=False):
+        section_obj = self.config[section]
+        sensor_type = section_obj['type']
+        with open(
+            os.path.join(
+                __abspath__,
+                'support',
+                section_obj['driver'],
+                f'{sensor_type}.yaml'
+            )
+        ) as f:
+            rs = yaml.safe_load(f)
+            rs['system_id'] = sensor.get_serial_number()
+            rs['system'] = section
+            rs['description'] = sensor.get_pod_desc()
+            rs['classification'][1]['value'] = sensor.get_pod_desc()
+            rs['identification'][0][
+                'value'] = rs['identification'][0]['value'] + section
+            rs['location']['geometry']['coordinates'] = [
+                section_obj['lon'],
+                section_obj['lat'],
+                section_obj['alt']
+            ]
+            rs['location']['crs']['properties']['name'] = section_obj['epsg']
+            rs['location']['properties']['name'] = section_obj['foi']
+
+            if agg:
+                req = requests.post(
+                    f'{self.istsos_url}/wa/istsos/services/'
+                    f'{self.istsos_srv}agg/procedures',
+                    data=json.dumps(rs),
+                    auth=self.istsos_auth
+                )
+            else:
+                req = requests.post(
+                    f'{self.istsos_url}/wa/istsos/services/'
+                    f'{self.istsos_srv}/procedures',
+                    data=json.dumps(rs),
+                    auth=self.istsos_auth
+                )
+
+            if req.status_code == 200:
+                check_idx = req.text.find("AssignedSensorId")
+                if check_idx > 0:
+                    assigned_id = req.text.split(':')[-2].split('<')[0]
+                    if agg:
+                        self.config[section]['assignedagg_id'] = assigned_id
+                    else:
+                        self.config[section]['assigned_id'] = assigned_id
+                    self.save_config()
+                else:
+                    check_idx = req.text.find("already exist")
+                    if check_idx > 0:
+                        if agg:
+                            self.logger.info(
+                                f'--> {section} already exist in service'
+                                f' {self.istsos_srv}agg'
+                            )
+                        else:
+                            self.logger.info(
+                                f'--> {section} already exist in service'
+                                f' {self.istsos_srv}'
+                            )
+                    else:
+                        self.logger.warning(req.text)
+            else:
+                self.logger.error(req.text)
+
+    def set_sensors(self):
+        # list sensors
+        for section in self.sections:
+            self.logger.info(f'--> Installing sensor {section}')
+            if self.config[section]['driver'] == 'ponsel':
+                if 'addr' in self.config[section].keys():
+                    sensor = Ponsel(
+                        self.config[section]['port'],
+                        int(self.config[section]['addr'])
+                    )
+                else:
+                    sensor = Ponsel(
+                        self.config[section]['port'],
+                        int(self.config[section]['type'])
+                    )
+                sensor.set_run_measurement(0x001f)
+                time.sleep(1)
+                description = sensor.get_pod_desc()
+
+                if description:
+                    # self.logger.info(
+                    #     sensor.show_info()
+                    # )
+                    self.insert_sensor(sensor, section)
+                    if 'aggregation_time' in self.config[section].keys():
+                        crt_srv_agg = self.create_service_agg(section)
+                        if crt_srv_agg['success']:
+                            self.insert_sensor(sensor, section, agg=True)
+                        else:
+                            self.logger.error(
+                                '\t\t--> Aggregation service NOT created'
+                            )
+                            return crt_srv_agg
+                else:
+                    return {
+                        'success': False,
+                        'msg': '\t\t--> Aggregation service NOT created'
+                    }
+                self.logger.info(
+                    f'--> Sensor {section} INSTALLED'
+                )
+
+            else:
+                self.logger.error(
+                    'Sensor type not supported.'
+                    'Supported sensor list: ponsel'
+                )
+                return {
+                    'success': False,
+                    'msg': (
+                        'Sensor type not supported.'
+                        'Supported sensor list: ponsel'
+                    )
+                }
+        return {'success': True}
+
+    def check_sensor_conf(self, name):
+        available_params = [
+            'sampling_time', 'aggregation_time',
+            'sending_time', 'driver', 'type',
+            'addr', 'port', 'baudrate',
+            'foi', 'lat', 'lon'
+        ]
+        params = list(
+            self.config[name].keys()
+        )
+        for par in params:
+            if par not in available_params:
+                self.logger.error(
+                    ('ERROR --> ')
+                )
+
+    def check_default_section(self):
+        if self.config.defaults():
+            params = list(
+                self.config.defaults().keys()
+            )
+            if 'transmission' not in params:
+                raise Exception(
+                    'ERROR --> transmission is not set.'
+                )
+            elif self.config.defaults()['transmission'] not in [
+                    'lora', 'serial']:
+                self.logger.error(
+                    'transmission is not set correctly.'
+                    ' Accepted values: lora'
+                )
+                raise Exception(
+                    (
+                        'ERROR --> transmission is not set correctly.'
+                        ' Accepted values: lora'
+                    )
+                )
+            if 'istsos' not in params:
+                self.logger.error(
+                    'istsos url is not set.'
+                )
+                raise Exception(
+                    'ERROR --> istsos url is not set.'
+                )
+        else:
+            self.logger.error(
+                (
+                    'DEFAULT section was'
+                    ' not found into the default.cfg file.'
+                )
+            )
+
+    def delete_service(self, agg=False):
+        if agg:
+            self.logger.info(
+                '\t--> Aggregator service deleting...'
+            )
+            service_name = self.config['DEFAULT']['service'] + 'agg'
+            data_post = {
+                "service": f"{service_name}",
+            }
+            req = requests.delete(
+                f'{self.istsos_url}/wa/istsos/services/{service_name}',
+                data=json.dumps(data_post),
+                auth=self.istsos_auth
+            )
+        else:
+            self.logger.info(
+                '\t--> Service deleting...'
+            )
+            service_name = self.config['DEFAULT']['service']
+            data_post = {
+                "service": f"{service_name}",
+            }
+            req = requests.delete(
+                f'{self.istsos_url}/wa/istsos/services/{service_name}',
+                data=json.dumps(data_post),
+                auth=self.istsos_auth
+            )
+        if req.status_code == 200:
+            check_idx = req.text.find("true")
+            if check_idx > 0:
+
+                self.logger.info(
+                    f'\t\t--> Service {service_name} deleted'
+                )
+                return {'success': True}
+            else:
+                check_idx = req.text.find("already exist")
+                check_idx2 = req.text.find("does not exist")
+                if check_idx > 0:
+                    self.logger.info(
+                        f'\t\t--> Service {service_name} deleted'
+                    )
+                    return {'success': True}
+                elif check_idx2 > 0:
+                    self.logger.info(
+                        f'\t\t--> Service {service_name} does not exist'
+                    )
+                    return {'success': True}
+                else:
+                    return {
+                        'success': False,
+                        'msg': req.text
+                    }
+        else:
+            return {
+                'success': False,
+                'msg': 'Status code {}'.format(
+                    req.status_code
+                )
+            }
+
+    def delete_cron_jobs(self):
+        cron = CronTab(
+            user=os.getlogin()
+        )
+        removed = False
+        for job in cron:
+            if __abspath__ in job.command:
+                removed = True
+                cron.remove(job)
+                if '.sh' in job.command:
+                    file_sh = job.command.split(' ')[1]
+                    os.remove(file_sh)
+        cron.write()
+        return {'success': True}
+
+    def reset_conf(self):
+        for section in self.sections:
+            self.config.remove_option(
+                section, 'assigned_id'
+            )
+            self.config.remove_option(
+                section, 'assignedagg_id'
+            )
+        self.save_config()
+        return {'success': True}
+
+    def clean_data(self):
+        self.logger.info(
+            '--> Clean old data'
+        )
+        log_days = int(
+            self.config['DEFAULT']['max_log_days']
+        )
+        # req = request.get(
+        #     '',
+        #     auth=self.istsos_auth
+        # )
+
+        self.logger.info(
+            '{}'.format(
+                self.config['DEFAULT']['max_log_days']
+            )
+        )
+        self.logger.info(
+            'The function is still not developed'
+        )
+
+    def install(self):
+        crt = self.create_service()
+        if not crt['success']:
+            return crt
+        self.logger.info(
+            '\t--> Service OK'
+        )
+        set_sens = self.set_sensors()
+        if not set_sens['success']:
+            return set_sens
+        self.logger.info(
+            '\t--> Sensors OK'
+        )
+        self.set_sampling()
+        self.logger.info(
+            '\t--> Set sampling configuration'
+        )
+        self.set_aggregation()
+        self.logger.info(
+            '\t--> Set aggragation process'
+        )
+        self.set_send_data()
+        self.logger.info(
+            '\t--> Set sending process'
+        )
+        return {'success': True}
+
+    def reset(self):
+        del_service = self.delete_service()
+        if not del_service['success']:
+            return del_service
+        del_service_agg = self.delete_service(agg=True)
+        if not del_service_agg['success']:
+            return del_service_agg
+        self.logger.info('\t--> Services DELETED')
+        del_cron_jobs = self.delete_cron_jobs()
+        if not del_cron_jobs['success']:
+            return del_service_agg
+        self.logger.info('\t--> Cron jobs and scripts DELETED')
+        reset_conf = self.reset_conf()
+        if not reset_conf['success']:
+            return reset_conf
+        self.logger.info('\t--> default.cfg RESTORED')
+        return {
+            'success': True
+        }
+
+
+def execute(args):
+    logger = logzero.logger
+    logger.info('********************************')
+    logger.info('* START CONFIGURATION SOFTWARE *')
+    logger.info('********************************')
+    try:
+        if args['r']:
+            confirm = input(
+                (
+                    "This operation will delete permanently all the data.\n"
+                    "Do you want to continue? (y/n)\n"
+                )
+            )
+            logger.info('### START RESET THE CONFIGURATION')
+            if confirm == 'y':
+                s = Station()
+                logger.info('--> Resetting...')
+                reset = s.reset()
+                if reset['success']:
+                    logger.info(
+                        '### END RESET SUCCESSFULLY'
+                    )
+                else:
+                    logger.error(
+                        '### END RESET WITH ERRORS: {}'.format(
+                            reset['msg']
+                        )
+                    )
+            else:
+                logger.info('### operation NOT CONFIRMED')
+                logger.info('### EXIT')
+        if args['c']:
+            s = Station()
+            s.clean_data()
+        else:
+            s = Station()
+            install = s.install()
+            if install['success']:
+                logger.info(
+                    '### END INSTALLATION SUCCESSFULLY'
+                )
+            else:
+                logger.error(
+                    '### END INSTALLATION WITH ERRORS: {}'.format(
+                        install['msg']
+                    )
+                )
+    except Exception as e:
+        self.logger.error(str(e))
+        raise e
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Set-up your station'
+    )
+
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        dest='v',
+        help='Activate verbose debug'
+    )
+
+    parser.add_argument(
+        '-r', '--reset',
+        action='store_true',
+        dest='r',
+        help='Run a completely reset.'
+    )
+
+    parser.add_argument(
+        '-c', '--clean',
+        action='store_true',
+        dest='c',
+        help='Remove old data.'
+    )
+
+    args = parser.parse_args()
+    execute(args.__dict__)

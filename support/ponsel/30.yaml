@@ -1,0 +1,58 @@
+system_id: null
+system: null
+description: null
+keywords: 'ponsel,sensor'
+identification:
+  - name: 'uniqueID'
+    definition: 'urn:ogc:def:identifier:OGC:uniqueID'
+    value: 'urn:ogc:def:procedure:x-istsos:1.0:'
+classification:
+  - name: 'System Type'
+    definition: 'urn:ogc:def:classifier:x-istsos:1.0:systemType'
+    value: 'insitu-fixed-point'
+  - name: 'Sensor Type'
+    definition: 'urn:ogc:def:classifier:x-istsos:1.0:sensorType'
+    value: null
+characteristics: 'https://en.aqualabo.fr/userfiles/doc/User%20Manual%20Conductivity%20digital%20sensor%20C4E.pdf'
+contacts: []
+documentation: []
+capabilities: []
+location:
+  type: Feature
+  geometry: 
+    type: Point
+    coordinates:
+      - null
+      - null
+      - null
+  crs:
+    type: name
+    properties:
+      name: null
+  properties:
+    name: null
+interfaces: ''
+inputs: []
+outputs:
+  - name: Time
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:time:iso8601'
+    uom: iso8601
+    description: ''
+  - name: 'water-temperature'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:temperature'
+    uom: '°C'
+    description: 'Water temperature at a fixed depth'
+  - name: 'water-C4E-conductivity'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:c4e:conductivity'
+    uom: 'µS/cm'
+    description: 'Water conductivity at a fixed depth'
+  - name: 'water-salinity'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:salinity'
+    uom: 'ppt'
+    description: 'Salinity concentration in Part Per Trillion'
+  - name: 'water-TDS-Kcl'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:tds-kcl'
+    uom: 'ppm'
+    description: 'TBS - Kcl in Part Per Million (ppm)'
+history: []
+mqtt: null
