@@ -28,7 +28,23 @@ __config__ = os.path.join(
     'default.cfg'
 )
 
-logzero.logfile("station.log", maxBytes=1e6, backupCount=3)
+# create log folder
+log_path = os.path.join(
+    __abspath__, 'log'
+)
+
+if not os.path.exists(log_path):
+    os.makedirs(log_path)
+
+logzero.logfile(
+    os.path.join(
+        __abspath__,
+        'log',
+        "station.log"
+    ),
+    maxBytes=1e6,
+    backupCount=3
+)
 
 
 class Station():
@@ -613,7 +629,7 @@ def execute(args):
             else:
                 logger.info('### operation NOT CONFIRMED')
                 logger.info('### EXIT')
-        if args['c']:
+        elif args['c']:
             s = Station()
             s.clean_data()
         else:
