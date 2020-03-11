@@ -28,7 +28,7 @@ __config__ = os.path.join(
     'default.cfg'
 )
 
-# create log folder
+# create log folder and file
 log_path = os.path.join(
     __abspath__, 'log'
 )
@@ -46,8 +46,20 @@ logzero.logfile(
     backupCount=3
 )
 
+"""
+This function save the configuration into the config file
+(e.g. default.cfg).
+
+Attributes:
+    real (int): The real part of complex number.
+    imag (int): The imaginary part of complex number.
+"""
+
 
 class Station():
+    """
+    This is a class for configure a monitoring station.
+    """
 
     def __init__(self):
         self.logger = logzero.logger
@@ -69,10 +81,20 @@ class Station():
         self.check_default_section()
 
     def save_config(self):
+        """
+        This function save the configuration into the config file
+        (e.g. default.cfg).
+        """
         with open(__config__, 'w') as f:
             self.config.write(f)
 
     def set_send_data(self):
+        """
+        This function creates a job in the crontab
+        which refers to the python script send_data.py.
+        This command is performed according to the sending_time
+        value set in the config file
+        """
         python_path = sys.executable
 
         path_script = os.path.join(
@@ -109,6 +131,13 @@ class Station():
             cron.write()
 
     def create_service(self):
+        """
+        This function creates the main istSOS service
+        to archive the raw data coming from the sensors
+        and collected with the python file 'sensor_rw.py'.
+        The service name is set according to the service
+        parameter set in the config file.
+        """
         service_name = self.config['DEFAULT']['service']
         epsg = '4326'
         if 'epsg' in self.config['DEFAULT'].keys():
@@ -142,6 +171,14 @@ class Station():
             }
 
     def create_service_agg(self, section):
+        """
+        This function creates the aggregation istSOS service
+        to archive the aggregated data coming from
+        the raw istSOS service and processed by
+        the python file 'sensor_agg.py'.
+        The service name is set according to the service
+        parameter set in the config file plus adding the text 'agg'.
+        """
         service_name = self.config['DEFAULT']['service']
         epsg = '4326'
         if 'epsg' in self.config[section].keys():
@@ -175,7 +212,14 @@ class Station():
             }
 
     def set_aggregation(self):
-
+        """
+        This function creates the aggregation istSOS service
+        to archive the aggregated data coming from
+        the raw istSOS service and processed by
+        the python file 'sensor_agg.py'.
+        The service name is set according to the service
+        parameter set in the config file plus adding the text 'agg'.
+        """
         python_path = sys.executable
 
         path_script = os.path.join(
@@ -216,7 +260,9 @@ class Station():
                     cron.write()
 
     def set_sampling(self):
-
+        """
+        This function sets the sampling process for each sensor.
+        """
         python_path = sys.executable
 
         path_script = os.path.join(
@@ -267,6 +313,14 @@ class Station():
                 cron.write()
 
     def insert_sensor(self, sensor, section, agg=False):
+        """
+        This function registers the sernsors into the istSOS services.
+
+        Attributes:
+            sensor (str): The section related to the sensor name
+                          which is equal to the section
+                          of the default.cfg file.
+        """
         section_obj = self.config[section]
         sensor_type = section_obj['type']
         with open(
@@ -335,7 +389,9 @@ class Station():
                 self.logger.error(req.text)
 
     def set_sensors(self):
-        # list sensors
+        """
+        This function sets the sensors.
+        """
         for section in self.sections:
             self.logger.info(f'--> Installing sensor {section}')
             if self.config[section]['driver'] == 'ponsel':
@@ -391,6 +447,10 @@ class Station():
         return {'success': True}
 
     def check_sensor_conf(self, name):
+        """
+        Check the config file
+        TBD
+        """
         available_params = [
             'sampling_time', 'aggregation_time',
             'sending_time', 'driver', 'type',
@@ -407,6 +467,10 @@ class Station():
                 )
 
     def check_default_section(self):
+        """
+        Check the config file
+        TBD
+        """
         if self.config.defaults():
             params = list(
                 self.config.defaults().keys()
@@ -443,6 +507,14 @@ class Station():
             )
 
     def delete_service(self, agg=False):
+        """
+        This function delete the services configured
+        on the local istSOS.
+
+        Attributes:
+            agg (bool): If True the aggregation service is deleted.
+                        If False the raw service is deleted.
+        """
         if agg:
             self.logger.info(
                 '\t--> Aggregator service deleting...'
@@ -504,6 +576,9 @@ class Station():
             }
 
     def delete_cron_jobs(self):
+        """
+        This function deletes all the jobs configured.
+        """
         cron = CronTab(
             user=os.getlogin()
         )
@@ -519,6 +594,9 @@ class Station():
         return {'success': True}
 
     def reset_conf(self):
+        """
+        This function restore the 'default.cfg' file.
+        """
         for section in self.sections:
             self.config.remove_option(
                 section, 'assigned_id'
@@ -530,6 +608,11 @@ class Station():
         return {'success': True}
 
     def clean_data(self):
+        """
+        This function delete all the data older than the variable
+        'max_log_day' set in the 'default.cfg' file.
+        TBD
+        """
         self.logger.info(
             '--> Clean old data'
         )
@@ -551,6 +634,10 @@ class Station():
         )
 
     def install(self):
+        """
+        This function configures all the processes
+        to run the monitoring station.
+        """
         crt = self.create_service()
         if not crt['success']:
             return crt
@@ -578,6 +665,10 @@ class Station():
         return {'success': True}
 
     def reset(self):
+        """
+        This function resets completely all
+        the configuration performed.
+        """
         del_service = self.delete_service()
         if not del_service['success']:
             return del_service
@@ -599,6 +690,9 @@ class Station():
 
 
 def execute(args):
+    """
+    This function executes the software.
+    """
     logger = logzero.logger
     logger.info('********************************')
     logger.info('* START CONFIGURATION SOFTWARE *')
