@@ -29,6 +29,7 @@ import minimalmodbus
 import serial
 import sys
 import time
+import argparse
 
 __author__ = "Stefano Grisoni - Dario Manca"
 __email__ = "grisoni.stefano@gmail.com - manca.dario@gmail.com"
@@ -251,49 +252,99 @@ class Ponsel(minimalmodbus.Instrument):
             self.get_hw_version()
         ))
 
-########################
-#  Testing the module  #
-########################
 
-
-if __name__ == '__main__':
-    ser = '/dev/ttyUSB0'
-    addr = 11
-    dbgEnable = False
-
-    print(sys.argv)
-
-    num = len(sys.argv)
-    if num > 1:
-        for i in range(1, num):
-            if sys.argv[i] == "-h" or sys.argv[i] == "?":  # debug mode
-                print('sudo python ponsel1.py [par]')
-                print('par:')
-                print('-c = calibration')
-                print('-d = verbose for debug')
-                print('-s = serial Ex. -s /dev/ttyUSB0')
-                print('-a = instrument address Ex. -a 10')
-                quit()
-            if sys.argv[i] == "-d":  # debug mode
-                dbgEnable = True
-            if sys.argv[i] == "-a":  # address
-                addr = int(sys.argv[i+1])
-            if sys.argv[i] == "-s":  # serial
-                ser = sys.argv[i+1]
-
+def execute(args):
     minimalmodbus._print_out('----------------------------')
     minimalmodbus._print_out('TESTING PONSEL MODBUS MODULE')
     minimalmodbus._print_out('----------------------------')
 
-    a = Ponsel(ser, addr)
-    a.instr.debug = dbgEnable
+    a = Ponsel(
+        args['ser'],
+        int(args['addr'])
+    )
+    a.instr.debug = args['d']
 
     a.set_run_measurement(0x001f)
     time.sleep(1)
     a.show_info()
 
     minimalmodbus._print_out('---------------------------')
-pass
+
+
+########################
+#  Testing the module  #
+########################
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Export data in CSV format'
+    )
+
+    parser.add_argument(
+        '-d', '--debug',
+        action='store_true',
+        dest='d',
+        help='Activate/deactivate debug (bool)'
+    )
+    parser.add_argument(
+        '-s', '--serial',
+        action='store',
+        dest='ser',
+        default='/dev/ttyUSB0',
+        help=(
+            'System serial port (str)'
+        )
+    )
+    parser.add_argument(
+        '-a', '--address',
+        action='store',
+        dest='addr',
+        help=(
+            'Modbus sensor address (int)'
+        )
+    )
+    args = parser.parse_args()
+    execute(args.__dict__)
+
+
+#     ser = '/dev/ttyUSB0'
+#     addr = 11
+#     dbgEnable = False
+
+#     print(sys.argv)
+
+#     num = len(sys.argv)
+#     if num > 1:
+#         for i in range(1, num):
+#             if sys.argv[i] == "-h" or sys.argv[i] == "?":  # debug mode
+#                 print('sudo python ponsel1.py [par]')
+#                 print('par:')
+#                 print('-c = calibration')
+#                 print('-d = verbose for debug')
+#                 print('-s = serial Ex. -s /dev/ttyUSB0')
+#                 print('-a = instrument address Ex. -a 10')
+#                 quit()
+#             if sys.argv[i] == "-d":  # debug mode
+#                 dbgEnable = True
+#             if sys.argv[i] == "-a":  # address
+#                 addr = int(sys.argv[i+1])
+#             if sys.argv[i] == "-s":  # serial
+#                 ser = sys.argv[i+1]
+
+#     minimalmodbus._print_out('----------------------------')
+#     minimalmodbus._print_out('TESTING PONSEL MODBUS MODULE')
+#     minimalmodbus._print_out('----------------------------')
+
+#     a = Ponsel(ser, addr)
+#     a.instr.debug = dbgEnable
+
+#     a.set_run_measurement(0x001f)
+#     time.sleep(1)
+#     a.show_info()
+
+#     minimalmodbus._print_out('---------------------------')
+# pass
 
 #     def set_debug(self):
 #         self.instr.debug = True
