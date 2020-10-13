@@ -13,6 +13,8 @@ import yaml
 import requests
 from crontab import CronTab
 import logzero
+from oauthlib.oauth2 import LegacyApplicationClient
+from requests_oauthlib import OAuth2Session
 
 # sensors libs
 from module.ponsel import Ponsel
@@ -75,6 +77,19 @@ class Station():
         self.istsos_auth = (
             self.config['DEFAULT']['user'],
             self.config['DEFAULT']['password']
+        )
+
+        # remote istsos variables
+        self.remote_istsos_url = self.config['DEFAULT']['remote_istsos_url']
+        self.remote_istsos_srv = self.config['DEFAULT']['remote_istsos_service']
+        self.remote_auth = self.config['DEFAULT']['remote_auth']
+        if self.remote_auth:
+            self.remote_oauth_token_url = self.config['DEFAULT']['remote_oauth_token_url']
+            self.remote_oauth_client_id = self.config['DEFAULT']['remote_oauth_client_id']
+            self.remote_oauth_client_secret = self.config['DEFAULT']['remote_oauth_client_secret']
+        self.remote_istsos_auth = (
+            self.config['DEFAULT']['remote_istsos_user'],
+            self.config['DEFAULT']['remote_istsos_password']
         )
 
         # checking configuration file
@@ -312,7 +327,7 @@ class Station():
                 job.minute.every(int(every))
                 cron.write()
 
-    def insert_sensor(self, sensor, section, agg=False):
+    def insert_sensor(self, sensor, section, agg=False, remote=False):
         """
         This function registers the sernsors into the istSOS services.
 
@@ -353,6 +368,40 @@ class Station():
                     data=json.dumps(rs),
                     auth=self.istsos_auth
                 )
+            elif remote:
+                if self.remote_auth == 'oauth':
+                    client = LegacyApplicationClient(
+                        client_id=self.remote_oauth_client_id
+                    )
+                    oauth = OAuth2Session(
+                        client=client,
+                    )
+                    token = oauth.fetch_token(
+                        token_url=self.remote_oauth_token_url,
+                        client_id=self.remote_oauth_client_id,
+                        client_secret=self.remote_oauth_client_secret,
+                        username=self.remote_istsos_auth[0],
+                        password=self.remote_istsos_auth[1],
+                        # verify=False
+                    )
+                    req = oauth.post(
+                        f'{self.remote_istsos_url}/wa/istsos/services/' +
+                        f'{self.remote_istsos_srv}/procedures',
+                        data=json.dumps(rs)
+                    )
+                    # req = requests.post(
+                    #     f'{self.remote_istsos_url}/wa/istsos/services/' 
+                    #     f'{self.remote_istsos_srv}/procedures',
+                    #     headers={'Authorization': 'Bearer '+ token['access_token']},
+                    #     data=json.dumps(rs)
+                    # )
+                else:
+                    req = requests.post(
+                        f'{self.remote_istsos_url}/wa/istsos/services/'
+                        f'{self.remote_istsos_srv}/procedures',
+                        data=json.dumps(rs),
+                        auth=self.remote_istsos_auth
+                    )
             else:
                 req = requests.post(
                     f'{self.istsos_url}/wa/istsos/services/'
@@ -364,12 +413,13 @@ class Station():
             if req.status_code == 200:
                 check_idx = req.text.find("AssignedSensorId")
                 if check_idx > 0:
-                    assigned_id = req.text.split(':')[-2].split('<')[0]
-                    if agg:
-                        self.config[section]['assignedagg_id'] = assigned_id
-                    else:
-                        self.config[section]['assigned_id'] = assigned_id
-                    self.save_config()
+                    if not remote:
+                        assigned_id = req.text.split(':')[-2].split('<')[0]
+                        if agg:
+                            self.config[section]['assignedagg_id'] = assigned_id
+                        else:
+                            self.config[section]['assigned_id'] = assigned_id
+                        self.save_config()
                 else:
                     check_idx = req.text.find("already exist")
                     if check_idx > 0:
@@ -417,7 +467,15 @@ class Station():
                     if 'aggregation_time' in self.config[section].keys():
                         crt_srv_agg = self.create_service_agg(section)
                         if crt_srv_agg['success']:
-                            self.insert_sensor(sensor, section, agg=True)
+                            self.insert_sensor(
+                                sensor, section,
+                                agg=True
+                            )
+                            if self.remote:
+                                self.insert_sensor(
+                                    sensor, section,
+                                    agg=False, remote=True
+                                )
                         else:
                             self.logger.error(
                                 '\t\t--> Aggregation service NOT created'
@@ -498,6 +556,30 @@ class Station():
                 raise Exception(
                     'ERROR --> istsos url is not set.'
                 )
+
+            # check remote istsos conf
+            if (self.remote_istsos_url and
+                    self.remote_istsos_srv):
+
+                req = requests.get(
+                    f'{self.remote_istsos_url}/{self.remote_istsos_srv}?'
+                    f'request=getCapabilities&service=SOS',
+                    auth=self.remote_istsos_auth
+                )
+                if req.status_code == 200:
+                    self.remote = True
+                else:
+                    self.remote = False
+                    self.logger.warning(
+                        'The remote istSOS is not correctly set'
+                        ' or is not working'
+                    )
+            else:
+                self.remote = False
+                self.logger.warning(
+                    'The remote istSOS is not correctly set'
+                    ' or is not working'
+                )
         else:
             self.logger.error(
                 (
@@ -506,7 +588,7 @@ class Station():
                 )
             )
 
-    def delete_service(self, agg=False):
+    def delete_service(self, agg=False, remote=False):
         """
         This function delete the services configured
         on the local istSOS.
@@ -528,6 +610,41 @@ class Station():
                 data=json.dumps(data_post),
                 auth=self.istsos_auth
             )
+        elif remote:
+            self.logger.info(
+                '\t--> Aggregator service deleting...'
+            )
+            service_name = self.config['DEFAULT']['remmote_istsos_service'] + 'agg'
+            data_post = {
+                "service": f"{service_name}",
+            }
+            if self.remote_auth == 'oauth':
+                client = LegacyApplicationClient(
+                    client_id=self.remote_oauth_client_id
+                )
+                oauth = OAuth2Session(
+                    client=client,
+                )
+                token = oauth.fetch_token(
+                    token_url=self.remote_oauth_token_url,
+                    client_id=self.remote_oauth_client_id,
+                    client_secret=self.remote_oauth_client_secret,
+                    # grant_type="password",
+                    username=self.remote_istsos_auth[0],
+                    password=self.remote_istsos_auth[1],
+                    # verify=False
+                )
+                req = oauth.delete(
+                    f'{self.remote_istsos_url}/wa/istsos/services/{service_name}',
+                    data=json.dumps(data_post),
+                    auth=self.remote_istsos_auth
+                )
+            else:
+                req = requests.delete(
+                    f'{self.remote_istsos_url}/wa/istsos/services/{service_name}',
+                    data=json.dumps(data_post),
+                    auth=self.remote_istsos_auth
+                )
         else:
             self.logger.info(
                 '\t--> Service deleting...'
@@ -541,6 +658,7 @@ class Station():
                 data=json.dumps(data_post),
                 auth=self.istsos_auth
             )
+        
         if req.status_code == 200:
             check_idx = req.text.find("true")
             if check_idx > 0:

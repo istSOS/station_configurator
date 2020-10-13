@@ -75,49 +75,54 @@ df = pd.read_csv(
     parse_dates=True
 )
 
-columns = df.columns[1:]
+if not df.empty:
 
-data_post = None
+    columns = df.columns[1:]
 
-idx = 0
+    data_post = None
 
-for col in columns:
-    if col.find('quality') < 0:
-        df_filtered = df.loc[df[columns[idx+1]] >= 100]
-        mean_val = df_filtered[col].mean()
-        min_qi = df_filtered[columns[idx+1]].min()
-        cnt_val = df_filtered[col].count()
-        perc = cnt_val/expected_num_values
-        if perc == 0:
-            if cnt_val > 0:
-                min_qi = 0
+    idx = 0
+
+    for col in columns:
+        if col.find('quality') < 0:
+            df_filtered = df.loc[df[columns[idx+1]] >= 100]
+            mean_val = df_filtered[col].mean()
+            min_qi = df_filtered[columns[idx+1]].min()
+            cnt_val = df_filtered[col].count()
+            perc = cnt_val/expected_num_values
+            if perc == 0:
+                if cnt_val > 0:
+                    min_qi = 0
+                else:
+                    min_qi = -100
+            elif perc < 0.6:
+                mean_val = round(mean_val, 2)
+                min_qi = 200
             else:
-                min_qi = -100
-        elif perc < 0.6:
-            mean_val = round(mean_val, 2)
-            min_qi = 1
-        else:
-            mean_val = round(mean_val, 2)
-            min_qi = 2
-        if data_post:
-            data_post = f'{data_post},{mean_val}:{min_qi}'
-        else:
-            data_post = (
-                f'{assigned_id};{end_position.isoformat()},{mean_val}:{min_qi}'
-            )
+                mean_val = round(mean_val, 2)
+                min_qi = 201
+            if data_post:
+                data_post = f'{data_post},{mean_val}:{min_qi}'
+            else:
+                data_post = (
+                    f'{assigned_id};{end_position.isoformat()},{mean_val}:{min_qi}'
+                )
 
-print(data_post)
+    print(data_post)
 
-req = requests.post(
-    '{}/wa/istsos/services/{}agg/operations/fastinsert'.format(
-        config['DEFAULT']['istsos'],
-        config['DEFAULT']['service'],
-    ),
-    data=data_post,
-    auth=(config['DEFAULT']['user'], config['DEFAULT']['password'])
-)
+    req = requests.post(
+        '{}/wa/istsos/services/{}agg/operations/fastinsert'.format(
+            config['DEFAULT']['istsos'],
+            config['DEFAULT']['service'],
+        ),
+        data=data_post,
+        auth=(config['DEFAULT']['user'], config['DEFAULT']['password'])
+    )
 
-if req.status_code == 200:
-    print(req.text)
+    if req.status_code == 200:
+        print(req.text)
+    else:
+        print(False)
+
 else:
-    print(False)
+    print("No data to aggregate")

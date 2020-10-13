@@ -3,4 +3,4 @@ __pycache__
 *.log
 *.sh
 default.cfg
-
+tests/
