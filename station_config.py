@@ -112,10 +112,16 @@ class Station():
         """
         python_path = sys.executable
 
-        path_script = os.path.join(
-            __abspath__,
-            'send_data.py'
-        )
+        if self.config['DEFAULT']['transmission'] == 'lora':
+            path_script = os.path.join(
+                __abspath__,
+                'send_data_lora.py'
+            )
+        else:
+            path_script = os.path.join(
+                __abspath__,
+                'send_data.py'
+            )
 
         path_config = os.path.join(
             __abspath__,
@@ -541,12 +547,12 @@ class Station():
                     'lora', 'serial']:
                 self.logger.error(
                     'transmission is not set correctly.'
-                    ' Accepted values: lora'
+                    ' Accepted values: lora, serial'
                 )
                 raise Exception(
                     (
                         'ERROR --> transmission is not set correctly.'
-                        ' Accepted values: lora'
+                        ' Accepted values: lora, serial'
                     )
                 )
             if 'istsos' not in params:
