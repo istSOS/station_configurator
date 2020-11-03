@@ -16,18 +16,18 @@ def send_data(data):
     mode = GPIO.getmode()
 
 
-    GPIO.setup(37, GPIO.OUT, initial=GPIO.LOW)
+    GPIO.setup(7, GPIO.OUT, initial=GPIO.LOW)
     time.sleep(1)
     cnt = 0
     received = ''
     while cnt <= 20:
-        GPIO.output(37, GPIO.HIGH)
+        GPIO.output(7, GPIO.HIGH)
         if (ser.in_waiting > 0):
             received = ser.readline()
             print(received)
             if received == b'OK\n':
                 break
-        GPIO.output(37, GPIO.LOW)
+        GPIO.output(7, GPIO.LOW)
         time.sleep(1)
         cnt+=1
 
@@ -54,7 +54,7 @@ def send_data(data):
 
     time.sleep(0.1)
 
-    GPIO.setup(37, GPIO.OUT, initial=GPIO.LOW)
+    GPIO.setup(7, GPIO.OUT, initial=GPIO.LOW)
     GPIO.cleanup()
     if sent == len(data):
       return True

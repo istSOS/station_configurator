@@ -67,6 +67,8 @@ event_time = f'{begin_position.isoformat()}/{end_position.isoformat()}'
 
 v_batt = read_ina219()
 
+data_to_send = []
+
 for section in config.sections():
     run = True
     sec = config[section]
@@ -108,10 +110,10 @@ for section in config.sections():
                 values.append(str(v_batt))
                 # print(section + ',' + t + "," + ','.join(values))
                 body = section + ',' + t + "," + ','.join(values)
-                send_data(body)
-                print(body)
+                data_to_send.append(body)
 
         else:
             raise Exception('ERROR in loading file')
     else:
         print('Cannot send not aggregated data')
+send_data(data_to_send)
