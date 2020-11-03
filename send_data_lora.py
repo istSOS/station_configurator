@@ -107,7 +107,9 @@ for section in config.sections():
                 
                 values.append(str(v_batt))
                 # print(section + ',' + t + "," + ','.join(values))
-                send_data(values)
+                body = section + ',' + t + "," + ','.join(values)
+                send_data(body)
+                print(body)
 
         else:
             raise Exception('ERROR in loading file')
