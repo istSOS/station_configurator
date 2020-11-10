@@ -25,7 +25,8 @@ __email__ = "daniele.strigaro@supsi.ch"
 __license__ = "Apache License, Version 2.0"
 __revision__ = "$Rev: 100 $"
 __date__ = "$Date: 2020-02-19 17:22:30 $"
-__abspath__ = os.path.abspath(os.getcwd())
+__abspath__ = os.path.abspath(
+os.getcwd())
 __config__ = os.path.join(
     __abspath__,
     'default.cfg'
@@ -130,7 +131,7 @@ class Station():
         )
 
         cron = CronTab(
-            user=getpass.getuser()
+            user=os.getlogin()
         )
         path_log = os.path.join(
             __abspath__,
@@ -146,24 +147,11 @@ class Station():
             if command in job.command:
                 add_cron = False
         if add_cron:
-            if int(self.config['DEFAULT']['sending_time']) > 30:
-                job = cron.new(command=command)
-                job.minute.on(
-                    str(int(self.config['DEFAULT']['sending_time']) - 30)
-                )
-                cron.write()
-                job = cron.new(command=command)
-                job.minute.on(
-                    self.config['DEFAULT']['sending_time']
-                )
-                cron.write()
-            else:
-                job = cron.new(command=command)
-                job.minute.every(
-                    self.config['DEFAULT']['sending_time']
-                )
-                cron.write()
-
+            job = cron.new(command=command)
+            job.minute.every(
+                self.config['DEFAULT']['sending_time']
+            )
+            cron.write()
 
     def create_service(self):
         """
@@ -268,7 +256,7 @@ class Station():
         )
 
         cron = CronTab(
-            user=getpass.getuser()
+            user=os.getlogin()
         )
         for section in self.sections:
             add_cron = True
@@ -311,7 +299,7 @@ class Station():
         )
 
         cron = CronTab(
-            user=getpass.getuser()
+            user=os.getlogin()
         )
         files_sh = []
 
@@ -718,7 +706,7 @@ class Station():
         This function deletes all the jobs configured.
         """
         cron = CronTab(
-            user=getpass.getuser()
+            user=os.getlogin()
         )
         removed = False
         for job in cron:
