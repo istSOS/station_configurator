@@ -1,0 +1,18 @@
+
+# install the lib
+sudo apt install ntfs-3g
+
+# list the devices
+sudo fdisk -l
+
+# list the device UUID
+sudo ls -l /dev/disk/by-uuid/
+
+# create folder
+sudo mkdir /media/usb 
+
+# edit fstab
+sudo nano /etc/fstab
+
+# add this line at the end of the file
+UUID=B081-CA61 /media/usb vfat uid=root,gid=root 0 0
