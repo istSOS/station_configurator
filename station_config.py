@@ -7,6 +7,7 @@ import logging
 import json
 import sys
 import argparse
+import getpass
 
 # external lib
 import yaml
@@ -129,7 +130,7 @@ class Station():
         )
 
         cron = CronTab(
-            user=os.getlogin()
+            user=getpass.getuser()
         )
         path_log = os.path.join(
             __abspath__,
@@ -254,7 +255,7 @@ class Station():
         )
 
         cron = CronTab(
-            user=os.getlogin()
+            user=getpass.getuser()
         )
         for section in self.sections:
             add_cron = True
@@ -297,7 +298,7 @@ class Station():
         )
 
         cron = CronTab(
-            user=os.getlogin()
+            user=getpass.getuser()
         )
         files_sh = []
 
@@ -704,7 +705,7 @@ class Station():
         This function deletes all the jobs configured.
         """
         cron = CronTab(
-            user=os.getlogin()
+            user=getpass.getuser()
         )
         removed = False
         for job in cron:
@@ -864,7 +865,7 @@ def execute(args):
                     )
                 )
     except Exception as e:
-        self.logger.error(str(e))
+        logger.error(str(e))
         raise e
 
 

@@ -3,7 +3,6 @@ import serial
 
 
 def send_data(data):
-  print(data)
   try:
       import RPi.GPIO as GPIO
   except Exception as e:
@@ -39,7 +38,7 @@ def send_data(data):
             ser.write(
               'SEND {}\n'.format(row).encode()
             )
-            while cnt <= 20:
+            while cnt <= 40:
                 if (ser.in_waiting > 0):
                   received = ser.readline()
                   print(received)
@@ -60,6 +59,7 @@ def send_data(data):
       return True
     else:
       return False
-  except:
+  except Exception as e:
+    print(str(e))
     GPIO.cleanup()
     return False

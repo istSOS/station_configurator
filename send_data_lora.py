@@ -94,9 +94,11 @@ for section in config.sections():
             data_text_splitted = data_text.split('\n')
             if len(data_text_splitted) == 2:
                 data_splitted = data_text_splitted[1].split(',')
-                t = data_text_splitted[1].split(',')[0][5:16]
+                #t = data_text_splitted[1].split(',')[0][5:16]
                 values_str = data_splitted[2:]
-                # print(t)
+                #print(values_str[0])
+                dt = datetime.fromisoformat(data_text_splitted[1].split(',')[0])
+                t = str(int(dt.timestamp()))
                 # values = list(
                 #     map(lambda x: str(round(float(x),2)), values_str)
                 # )
