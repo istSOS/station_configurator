@@ -37,6 +37,7 @@ base_path = f'{os.sep}'.join(
 istsos_url = config['DEFAULT']['istsos']
 service = config['DEFAULT']['service']
 mode = int(config['DEFAULT']['mode'])
+usb_log = int(config['DEFAULT']['usb_log'])
 
 # MQTT
 mqtt_broker = config['DEFAULT']['mqtt_address']
@@ -113,16 +114,17 @@ for section in config.sections():
                 # print(section + ',' + t + "," + ','.join(values))
                 body = section + ',' + t + "," + ','.join(values)
                 data_to_send.append(body)
-                mode = 'w'
-                file_name = 'LOG.txt'
-                for item in os.listdir('/media/usb'):
-                    if item == file_name:
-                        mode = 'a'
+                if usb_log:
+                    mode = 'w'
+                    file_name = 'LOG.txt'
+                    for item in os.listdir('/media/usb'):
+                        if item == file_name:
+                            mode = 'a'
 
-                # try some standard file operations
-                with open('/media/usb/LOG.txt', mode) as f:
-                    f.write(body)
-                    f.close()
+                    # try some standard file operations
+                    with open('/media/usb/LOG.txt', mode) as f:
+                        f.write(body)
+                        f.close()
 
         else:
             raise Exception('ERROR in loading file')
