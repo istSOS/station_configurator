@@ -123,7 +123,7 @@ for section in config.sections():
 
                     # try some standard file operations
                     with open('/media/usb/LOG.txt', mode) as f:
-                        f.write(body)
+                        f.write(body + "\n")
                         f.close()
 
         else:
