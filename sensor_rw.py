@@ -8,6 +8,7 @@ import sys
 
 # external lib
 import requests
+import yaml
 
 # supported devices
 from module.ponsel import Ponsel
@@ -25,27 +26,48 @@ if num > 1:
         if sys.argv[i] == "-c":  # debug mode
             config_file_path = sys.argv[i+1]
 
-
+# read config file
 config = configparser.ConfigParser()
 config.read(config_file_path)
+
+# read variables for sensor/section
 section = config[section_name]
-sensor = Ponsel(
-    section['port'],
-    int(section['addr'])
-)
-sensor.set_run_measurement(0x001f)
-time.sleep(1)
-values = sensor.get_values()
-status = sensor.get_status()
+
+# set variables
+sensor_type = section['type']
+sensor_driver = section['driver']
+
+# initialize and read data from sensor
+if sensor_driver == 'ponsel':
+    sensor = Ponsel(
+        section['port'],
+        int(section['addr'])
+    )
+    sensor.set_run_measurement(0x001f)
+    time.sleep(1)
+    values = sensor.get_values()
+    status = sensor.get_status()
+else:
+    raise 'Sensor driver is not supported yet.'
 
 data = None
+outputs = []
+with open(
+        os.path.join(
+            ___dir___,
+            'support',
+            section['driver'],
+            f'{sensor_type}.yaml'
+        )
+    ) as f:
+        rs = yaml.safe_load(f)
+        outputs = rs['outputs'][1:]
 
-for i in range(len(status)):
-    if status[i] != 0:
-        if data:
-            data = data + ',' + str(round(values[i], 1))
-        else:
-            data = str(round(values[i], 1))
+for i in range(len(outputs)):
+    if data:
+        data = data + ',' + str(round(values[i], 100))
+    else:
+        data = str(round(values[i], 100))
 
 data_post = '{};{},{}'.format(
     section['assigned_id'],
