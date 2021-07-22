@@ -33,12 +33,16 @@ def read_ina219():
         SHUNT_OHMS = 0.1
         MAX_EXPECTED_AMPS = 2.0
         ADDRESS=0x40
+        #ina = INA219(
+        #  shunt_ohms=SHUNT_OHMS,
+        #  address=ADDRESS
+        #)
+        #ina.configure(ina.RANGE_16V)
         ina = INA219(
-          shunt_ohms=SHUNT_OHMS,
-          address=ADDRESS
+            SHUNT_OHMS, 1.6, address=ADDRESS
         )
-        # ina.configure(ina.RANGE_16V)
-        ina.configure()
+        ina.configure(ina.RANGE_32V, ina.GAIN_8_320MV)
+        # ina.configure()
         print('Bus Voltage: {0:0.2f}V'.format(ina.voltage()))
         print('Bus Current: {0:0.2f}mA'.format(ina.current()))
         print('Power: {0:0.2f}mW'.format(ina.power()))
