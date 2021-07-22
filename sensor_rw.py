@@ -28,15 +28,18 @@ if num > 1:
 
 config = configparser.ConfigParser()
 config.read(config_file_path)
+usb_log = config['DEFAULT']['usb_log']
 section = config[section_name]
 sensor = Ponsel(
     section['port'],
     int(section['addr'])
 )
 sensor.set_run_measurement(0x001f)
-time.sleep(1)
+time.sleep(0.5)
 values = sensor.get_values()
+print(values)
 status = sensor.get_status()
+print(status)
 
 data = None
 
@@ -46,13 +49,21 @@ for i in range(len(status)):
             data = data + ',' + str(round(values[i], 1))
         else:
             data = str(round(values[i], 1))
+    else:
+        if i<=3:
+            if data:
+                data = data + ',' + str(round(values[i], 1))
+            else:
+                data = str(round(values[i], 1))
+
 
 data_post = '{};{},{}'.format(
     section['assigned_id'],
-    datetime.now(timezone.utc).isoformat(),
+    datetime.now(timezone.utc).replace(second=0, microsecond=0).isoformat(),
     data
 )
 print(data_post)
+
 
 req = requests.post(
     '{}/wa/istsos/services/{}/operations/fastinsert'.format(
@@ -67,3 +78,19 @@ if req.status_code == 200:
     print(req.text)
 else:
     print(False)
+
+try:
+    if usb_log:
+        mode = 'w'
+        file_name = 'LOG.txt'
+        for item in os.listdir('/media/usb'):
+            if item == file_name:
+                mode = 'a'
+        # try some standard file operations
+        with open('/media/usb/LOG.txt', mode) as f:
+            f.write(section_name + "," + data_post + "\n")
+            f.close()
+except Exception as e:
+    print(str(e))
+
+
