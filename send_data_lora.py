@@ -37,6 +37,7 @@ base_path = f'{os.sep}'.join(
 istsos_url = config['DEFAULT']['istsos']
 service = config['DEFAULT']['service']
 mode = int(config['DEFAULT']['mode'])
+usb_log = 0
 
 # MQTT
 mqtt_broker = config['DEFAULT']['mqtt_address']
@@ -94,9 +95,11 @@ for section in config.sections():
             data_text_splitted = data_text.split('\n')
             if len(data_text_splitted) == 2:
                 data_splitted = data_text_splitted[1].split(',')
-                t = data_text_splitted[1].split(',')[0][5:16]
+                #t = data_text_splitted[1].split(',')[0][5:16]
                 values_str = data_splitted[2:]
-                # print(t)
+                #print(values_str[0])
+                dt = datetime.fromisoformat(data_text_splitted[1].split(',')[0])
+                t = str(int(dt.timestamp()))
                 # values = list(
                 #     map(lambda x: str(round(float(x),2)), values_str)
                 # )
@@ -111,9 +114,23 @@ for section in config.sections():
                 # print(section + ',' + t + "," + ','.join(values))
                 body = section + ',' + t + "," + ','.join(values)
                 data_to_send.append(body)
+                try:
+                    if usb_log:
+                        mode = 'w'
+                        file_name = 'LOG.txt'
+                        for item in os.listdir('/media/usb'):
+                            if item == file_name:
+                                mode = 'a'
+                        # try some standard file operations
+                        with open('/media/usb/LOG.txt', mode) as f:
+                            f.write(body + "\n")
+                            f.close()
+                except:
+                    continue
 
         else:
             raise Exception('ERROR in loading file')
     else:
         print('Cannot send not aggregated data')
+print('SENDING DATA')
 send_data(data_to_send)
