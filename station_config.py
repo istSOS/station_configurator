@@ -14,8 +14,6 @@ import yaml
 import requests
 from crontab import CronTab
 import logzero
-from oauthlib.oauth2 import LegacyApplicationClient
-from requests_oauthlib import OAuth2Session
 
 # sensors libs
 from module.ponsel import Ponsel
@@ -83,19 +81,39 @@ class Station():
         # remote istsos variables
         self.remote_istsos_url = self.config['DEFAULT']['remote_istsos_url']
         self.remote_istsos_srv = self.config['DEFAULT']['remote_istsos_service']
-        self.remote_auth = self.config['DEFAULT']['remote_auth']
-        if self.remote_auth == 'oauth':
+        self.remote_istsos_auth_type = self.config['DEFAULT']['remote_istsos_auth']
+        if self.remote_istsos_auth_type == 'oauth':
             self.remote_oauth_token_url = self.config['DEFAULT']['remote_oauth_token_url']
             self.remote_oauth_client_id = self.config['DEFAULT']['remote_oauth_client_id']
             self.remote_oauth_client_secret = self.config['DEFAULT']['remote_oauth_client_secret']
-        elif self.remote_auth == 'basic':
+            body_data = {
+                "username": self.config['DEFAULT']['remote_istsos_user'],
+                "password": self.config['DEFAULT']['remote_istsos_password'],
+                "grant_type": "password",
+                "client_id": "istsos-istsos"
+            }
+            req = requests.post(
+                self.remote_oauth_token_url,
+                headers={
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                },
+                data=body_data
+            )
+            if req.status_code==200:
+                res = req.json()
+                self.remote_istsos_auth = "Bearer {}".format(
+                    res['access_token']
+                )
+            else:
+                raise "Can't get authorization token from oauth service"
+        elif self.remote_istsos_auth == 'basic':
             self.remote_istsos_auth = (
                 self.config['DEFAULT']['remote_istsos_user'],
                 self.config['DEFAULT']['remote_istsos_password']
             )
         else:
-            print(self.remote_auth)
-            raise "remote_auth: remote authorization type not recognized"
+            print(self.remote_istsos_auth)
+            raise "remote_istsos_auth: remote authorization type not recognized"
 
         # checking configuration file
         self.check_default_section()
@@ -397,24 +415,13 @@ class Station():
                     auth=self.istsos_auth
                 )
             elif remote:
-                if self.remote_auth == 'oauth':
-                    client = LegacyApplicationClient(
-                        client_id=self.remote_oauth_client_id
-                    )
-                    oauth = OAuth2Session(
-                        client=client,
-                    )
-                    token = oauth.fetch_token(
-                        token_url=self.remote_oauth_token_url,
-                        client_id=self.remote_oauth_client_id,
-                        client_secret=self.remote_oauth_client_secret,
-                        username=self.remote_istsos_auth[0],
-                        password=self.remote_istsos_auth[1],
-                        # verify=False
-                    )
-                    req = oauth.post(
+                if self.remote_istsos_auth_type == 'oauth':
+                    req = requests.post(
                         f'{self.remote_istsos_url}/wa/istsos/services/' +
                         f'{self.remote_istsos_srv}/procedures',
+                        headers={
+                            "Authorization": self.remote_istsos_auth
+                        },
                         data=json.dumps(rs)
                     )
                     # req = requests.post(
@@ -486,7 +493,6 @@ class Station():
                 sensor.set_run_measurement(0x001f)
                 time.sleep(1)
                 description = sensor.get_pod_desc()
-
                 if description:
                     # self.logger.info(
                     #     sensor.show_info()
@@ -512,7 +518,7 @@ class Station():
                 else:
                     return {
                         'success': False,
-                        'msg': '\t\t--> Aggregation service NOT created'
+                        'msg': '\t\t--> Can\'t get sensor description'
                     }
                 self.logger.info(
                     f'--> Sensor {section} INSTALLED'
@@ -587,16 +593,26 @@ class Station():
 
             # check remote istsos conf
             if (self.remote_istsos_url and
-                    self.remote_istsos_srv):
-
-                req = requests.get(
-                    f'{self.remote_istsos_url}/{self.remote_istsos_srv}?'
-                    f'request=getCapabilities&service=SOS',
-                    auth=self.remote_istsos_auth
-                )
+                    self.remote_istsos_srv and
+                        self.remote_istsos_auth):
+                if self.remote_istsos_auth_type == 'oauth':
+                    req = requests.get(
+                        f'{self.remote_istsos_url}/{self.remote_istsos_srv}?'
+                        f'request=getCapabilities&service=SOS',
+                        headers={
+                            "Authorization": self.remote_istsos_auth
+                        }
+                    )
+                else:
+                    req = requests.get(
+                        f'{self.remote_istsos_url}/{self.remote_istsos_srv}?'
+                        f'request=getCapabilities&service=SOS',
+                        auth=self.remote_istsos_auth
+                    )
                 if req.status_code == 200:
                     self.remote = True
                 else:
+                    logging.error(req.text)
                     self.remote = False
                     self.logger.warning(
                         'The remote istSOS is not correctly set'
@@ -646,26 +662,13 @@ class Station():
             data_post = {
                 "service": f"{service_name}",
             }
-            if self.remote_auth == 'oauth':
-                client = LegacyApplicationClient(
-                    client_id=self.remote_oauth_client_id
-                )
-                oauth = OAuth2Session(
-                    client=client,
-                )
-                token = oauth.fetch_token(
-                    token_url=self.remote_oauth_token_url,
-                    client_id=self.remote_oauth_client_id,
-                    client_secret=self.remote_oauth_client_secret,
-                    # grant_type="password",
-                    username=self.remote_istsos_auth[0],
-                    password=self.remote_istsos_auth[1],
-                    # verify=False
-                )
-                req = oauth.delete(
+            if self.remote_istsos_auth_type == 'oauth':
+                req = requests.delete(
                     f'{self.remote_istsos_url}/wa/istsos/services/{service_name}',
+                    headers={
+                        "Authorization": self.remote_istsos_auth
+                    },
                     data=json.dumps(data_post),
-                    auth=self.remote_istsos_auth
                 )
             else:
                 req = requests.delete(
