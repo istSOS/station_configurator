@@ -37,7 +37,7 @@ base_path = f'{os.sep}'.join(
 istsos_url = config['DEFAULT']['istsos']
 service = config['DEFAULT']['service']
 mode = int(config['DEFAULT']['mode'])
-usb_log = 0
+usb_log = int(config['DEFAULT']['usb_log'])
 
 # MQTT
 mqtt_broker = config['DEFAULT']['mqtt_address']

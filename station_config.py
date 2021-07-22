@@ -84,14 +84,18 @@ class Station():
         self.remote_istsos_url = self.config['DEFAULT']['remote_istsos_url']
         self.remote_istsos_srv = self.config['DEFAULT']['remote_istsos_service']
         self.remote_auth = self.config['DEFAULT']['remote_auth']
-        if self.remote_auth:
+        if self.remote_auth == 'oauth':
             self.remote_oauth_token_url = self.config['DEFAULT']['remote_oauth_token_url']
             self.remote_oauth_client_id = self.config['DEFAULT']['remote_oauth_client_id']
             self.remote_oauth_client_secret = self.config['DEFAULT']['remote_oauth_client_secret']
-        self.remote_istsos_auth = (
-            self.config['DEFAULT']['remote_istsos_user'],
-            self.config['DEFAULT']['remote_istsos_password']
-        )
+        elif self.remote_auth == 'basic':
+            self.remote_istsos_auth = (
+                self.config['DEFAULT']['remote_istsos_user'],
+                self.config['DEFAULT']['remote_istsos_password']
+            )
+        else:
+            print(self.remote_auth)
+            raise "remote_auth: remote authorization type not recognized"
 
         # checking configuration file
         self.check_default_section()
@@ -118,11 +122,15 @@ class Station():
                 __abspath__,
                 'send_data_lora.py'
             )
-        else:
+        elif self.config['DEFAULT']['transmission'] == 'fastinsert':
             path_script = os.path.join(
                 __abspath__,
                 'send_data.py'
             )
+        elif self.config['DEFAULT']['transmission'] == 'mqtt':
+            raise "transmission: mqtt still to be implemented"
+        else:
+            raise "transmission: transmission type not recognized"
 
         path_config = os.path.join(
             __abspath__,

@@ -1,0 +1,30 @@
+
+# install the lib
+sudo apt install ntfs-3g
+
+# list the devices
+sudo fdisk -l
+
+# list the device UUID
+sudo ls -l /dev/disk/by-uuid/
+
+# create folder
+sudo mkdir /media/usb 
+
+# edit fstab
+sudo nano /etc/fstab
+
+# add this line at the end of the file
+UUID=B081-CA61 /media/usb vfat uid=root,gid=root 0 0
+
+
+if usb_log:
+    mode = 'w'
+    file_name = 'LOG.txt'
+    for item in os.listdir('/media/usb'):
+        if item == file_name:
+            mode = 'a'
+    # try some standard file operations
+    with open('/media/usb/LOG.txt', mode) as f:
+        f.write("body\n")
+        f.close()

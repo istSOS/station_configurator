@@ -13,6 +13,8 @@ def send_data(data):
     ser.flush()
     GPIO.setmode(GPIO.BOARD)
     mode = GPIO.getmode()
+
+
     GPIO.setup(7, GPIO.OUT, initial=GPIO.LOW)
     time.sleep(1)
     cnt = 0
