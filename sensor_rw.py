@@ -53,9 +53,10 @@ else:
 
 data = None
 outputs = []
+separator = os.sep
 with open(
         os.path.join(
-            ___dir___,
+            separator.join(config_file_path.split('/')[0:-1]),
             'support',
             section['driver'],
             f'{sensor_type}.yaml'
