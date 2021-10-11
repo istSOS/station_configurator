@@ -23,7 +23,6 @@ if num > 1:
         if sys.argv[i] == "-c":  # debug mode
             config_file_path = sys.argv[i+1]
 
-
 config = configparser.ConfigParser()
 config.read(config_file_path)
 section = config[section_name]
@@ -39,7 +38,6 @@ end_position = datetime(
 begin_position = end_position - timedelta(
     minutes=int(section['aggregation_time'])
 )
-
 
 event_time = f'{begin_position.isoformat()}/{end_position.isoformat()}'
 
@@ -76,13 +74,9 @@ df = pd.read_csv(
 )
 
 if not df.empty:
-
     columns = df.columns[1:]
-
     data_post = None
-
     idx = 0
-
     for col in columns:
         if col.find('quality') < 0:
             df_filtered = df.loc[df[columns[idx+1]] >= 100]

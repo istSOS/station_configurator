@@ -17,6 +17,7 @@ import logzero
 
 # sensors libs
 from module.ponsel import Ponsel
+from module.lufft import WS_UMB
 
 __author__ = "Daniele Strigaro"
 __email__ = "daniele.strigaro@supsi.ch"
@@ -146,9 +147,9 @@ class Station():
                 'send_data.py'
             )
         elif self.config['DEFAULT']['transmission'] == 'mqtt':
-            raise "transmission: mqtt still to be implemented"
+            raise Exception("transmission: mqtt still to be implemented")
         else:
-            raise "transmission: transmission type not recognized"
+            raise Exception("transmission: transmission type not recognized")
 
         path_config = os.path.join(
             __abspath__,
@@ -393,10 +394,13 @@ class Station():
             )
         ) as f:
             rs = yaml.safe_load(f)
-            rs['system_id'] = sensor.get_serial_number()
+            if section_obj['driver'] == 'ponsel':
+                rs['system_id'] = sensor.get_serial_number()
+                rs['description'] = sensor.get_pod_desc()
+                rs['classification'][1]['value'] = sensor.get_pod_desc()
+            elif section_obj['driver'] == 'lufft':
+                rs['system_id'] = section
             rs['system'] = section
-            rs['description'] = sensor.get_pod_desc()
-            rs['classification'][1]['value'] = sensor.get_pod_desc()
             rs['identification'][0][
                 'value'] = rs['identification'][0]['value'] + section
             rs['location']['geometry']['coordinates'] = [
@@ -406,7 +410,6 @@ class Station():
             ]
             rs['location']['crs']['properties']['name'] = section_obj['epsg']
             rs['location']['properties']['name'] = section_obj['foi']
-
             if agg:
                 req = requests.post(
                     f'{self.istsos_url}/wa/istsos/services/'
@@ -518,11 +521,42 @@ class Station():
                 else:
                     return {
                         'success': False,
-                        'msg': '\t\t--> Can\'t get sensor description'
+                        'msg': '\t\t--> Can\'t get Ponsel sensor description'
                     }
                 self.logger.info(
                     f'--> Sensor {section} INSTALLED'
                 )
+            elif self.config[section]['driver'] == 'lufft':
+                value_UMB = [200, 305, 500, 510, 900, 100, 110, 440, 400]
+                try:
+                    with WS_UMB(self.config[section]['port']) as umb:
+                        for v in value_UMB:
+                            value, st = umb.onlineDataQuery(v, int(self.config[section]['addr']))
+                            if st!=0:
+                                raise Exception('Not working')
+                        self.insert_sensor(umb, section)
+                        if 'aggregation_time' in self.config[section].keys():
+                            crt_srv_agg = self.create_service_agg(section)
+                            if crt_srv_agg['success']:
+                                self.insert_sensor(
+                                    umb, section,
+                                    agg=True
+                                )
+                                if self.remote:
+                                    self.insert_sensor(
+                                        umb, section,
+                                        agg=False, remote=True
+                                    )
+                            else:
+                                self.logger.error(
+                                    '\t\t--> Aggregation service NOT created'
+                                )
+                                return crt_srv_agg
+                except Exception as e:
+                    return {
+                        'success': False,
+                        'msg': '\t\t--> Can\'t find lufft sensor'
+                    }
 
             else:
                 self.logger.error(
@@ -572,7 +606,7 @@ class Station():
                     'ERROR --> transmission is not set.'
                 )
             elif self.config.defaults()['transmission'] not in [
-                    'lora', 'serial']:
+                    'lora', 'serial', 'nb-iot', 'lte']:
                 self.logger.error(
                     'transmission is not set correctly.'
                     ' Accepted values: lora, serial'
@@ -805,7 +839,7 @@ class Station():
         )
         self.set_aggregation()
         self.logger.info(
-            '\t--> Set aggragation process'
+            '\t--> Set aggregation process'
         )
         self.set_send_data()
         self.logger.info(

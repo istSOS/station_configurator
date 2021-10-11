@@ -42,17 +42,29 @@ outputs:
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:temperature'
     uom: '°C'
     description: 'Water temperature at a fixed depth'
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['-10','60']
   - name: 'water-O2S'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:O2S'
     uom: '%'
     description: 'Oxygen percent of saturation at a fixed depth'
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['0','200']
   - name: 'water-O2D'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:O2D'
     uom: 'mg/L'
     description: 'Oxygen concentration per Liter at a fixed depth'
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['0','20']
   - name: 'water-O2C'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:O2C'
     uom: 'ppm'
     description: 'Oxygen concentration in Part Per Million (ppm)'
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['0','20']
 history: []
 mqtt: null

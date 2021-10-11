@@ -1,0 +1,91 @@
+system_id: null
+system: null
+description: 'WS501-UMB Smart Weather Sensor'
+keywords: 'lufft,sensor'
+identification:
+  - name: 'uniqueID'
+    definition: 'urn:ogc:def:identifier:OGC:uniqueID'
+    value: 'urn:ogc:def:procedure:x-istsos:1.0:'
+classification:
+  - name: 'System Type'
+    definition: 'urn:ogc:def:classifier:x-istsos:1.0:systemType'
+    value: 'insitu-fixed-point'
+  - name: 'Sensor Type'
+    definition: 'urn:ogc:def:classifier:x-istsos:1.0:sensorType'
+    value: 'WS501-UMB Smart Weather Sensor'
+characteristics: 'https://www.lufft.com/download/manual-lufft-wsxxx-weather-sensor-en/'
+contacts: []
+documentation: []
+capabilities: []
+location:
+  type: Feature
+  geometry: 
+    type: Point
+    coordinates:
+      - null
+      - null
+      - null
+  crs:
+    type: name
+    properties:
+      name: null
+  properties:
+    name: null
+interfaces: ''
+inputs: []
+outputs:
+  - name: Time
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:time:iso8601'
+    uom: iso8601
+    description: ''
+  - name: 'air-humidity-relative'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:meteo:air:humidity:relative'
+    uom: '%'
+    description: ''
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['0','100']
+  - name: 'air-pressure'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:meteo:air:pressure'
+    uom: 'hPa'
+    description: ''
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['300','1200']
+  - name: 'wind-direction'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:meteo:wind:direction'
+    uom: '°'
+    description: ''
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['0','360']
+  - name: 'global-radiation'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:meteo:global:radiation'
+    uom: 'W/m2'
+    description: ''
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['0','2000']
+  - name: 'air-temperature'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:meteo:air:temperature'
+    uom: '°C'
+    description: ''
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['-50','60']
+  - name: 'wind-speed'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:meteo:wind:speed'
+    uom: 'm/s'
+    description: ''
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['0','75']
+  - name: 'wind-speed-max'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:meteo:wind:speed:max'
+    uom: 'm/s'
+    description: ''
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['0','75']
+history: []
+mqtt: null

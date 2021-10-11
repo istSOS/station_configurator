@@ -42,17 +42,29 @@ outputs:
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:temperature'
     uom: '°C'
     description: 'Water temperature at a fixed depth'
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['-10', '60']
   - name: 'water-C4E-conductivity'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:c4e:conductivity'
     uom: 'µS/cm'
     description: 'Water conductivity at a fixed depth'
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['0', '2000']
   - name: 'water-salinity'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:salinity'
     uom: 'ppt'
     description: 'Salinity concentration in Part Per Trillion'
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['5', '60']
   - name: 'water-TDS-Kcl'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:tds-kcl'
     uom: 'ppm'
     description: 'TBS - Kcl in Part Per Million (ppm)'
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['0', '133000']
 history: []
 mqtt: null
