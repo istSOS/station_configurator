@@ -4,6 +4,7 @@ import configparser
 import os
 from datetime import datetime, timezone
 import time
+import json
 import sys
 
 # external lib
@@ -81,7 +82,7 @@ while True:
                             )
                             status.append(st)
                     if values:
-                        break                    
+                        break
                 except:
                     time.sleep(1)
                     i+=1
@@ -111,33 +112,89 @@ with open(
     ) as f:
         rs = yaml.safe_load(f)
         outputs = rs['outputs'][1:]
-
+go_values = []
 for i in range(len(outputs)):
+    go_values.append(round(values[i], 2))
     if data:
         data = data + ',' + str(round(values[i], 2))
     else:
         data = str(round(values[i], 2))
 
+bp = datetime.now(timezone.utc).replace(second=0, microsecond=0).isoformat()
+
 data_post = '{};{},{}'.format(
     section['assigned_id'],
-    datetime.now(timezone.utc).replace(second=0, microsecond=0).isoformat(),
+    bp,
     data
 )
 print(data_post)
 
-req = requests.post(
-    '{}/wa/istsos/services/{}/operations/fastinsert'.format(
+#### Using InsertObservation #####
+go = requests.get(
+    (
+        "{}/wa/istsos/services/{}/operations/getobservation"
+        "/offerings/temporary/procedures/{}/observedproperties/:/eventtime/last"
+    ).format(
+        config['DEFAULT']['istsos'],
+        config['DEFAULT']['service'],
+        section_name
+    ),
+    auth=(
+        config['DEFAULT']['user'],
+        config['DEFAULT']['password']
+    )
+)
+
+go = go.json()
+go = go['data'][0]
+
+go["samplingTime"] = {
+    "beginPosition": bp,
+    "endPosition":  bp
+}
+go['result']['DataArray']['values'] = [
+    [bp] + go_values
+]
+
+go['result']['DataArray']['elementCount'] = str(len(outputs)+1)
+go['result']['DataArray']['field'] = list(
+    filter(
+        lambda x: 'qualityIndex' not in x['definition'], go['result']['DataArray']['field']
+    )
+)
+
+res = requests.post(
+    "%s/wa/istsos/services/%s/operations/"
+    "insertobservation" % (
         config['DEFAULT']['istsos'],
         config['DEFAULT']['service'],
     ),
-    data=data_post,
-    auth=(config['DEFAULT']['user'], config['DEFAULT']['password'])
+    auth=(
+        config['DEFAULT']['user'], config['DEFAULT']['password']
+    ),
+    data=json.dumps({
+        "ForceInsert": "true",
+        "AssignedSensorId": section['assigned_id'],
+        "Observation": go
+    })
 )
+res.raise_for_status()
+print(" > Insert observation success: %s" % (
+    res.json()['success']))
 
-if req.status_code == 200:
-    print(req.text)
-else:
-    print(False)
+# req = requests.post(
+#     '{}/wa/istsos/services/{}/operations/fastinsert'.format(
+#         config['DEFAULT']['istsos'],
+#         config['DEFAULT']['service'],
+#     ),
+#     data=data_post,
+#     auth=(config['DEFAULT']['user'], config['DEFAULT']['password'])
+# )
+
+# if req.status_code == 200:
+#     print(req.text)
+# else:
+#     print(False)
 
 try:
     if usb_log:
