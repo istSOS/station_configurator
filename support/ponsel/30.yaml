@@ -45,6 +45,7 @@ outputs:
     constraint: 
       role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
       interval: ['-10', '60']
+    aggregator: 'AVG'
   - name: 'water-C4E-conductivity'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:c4e:conductivity'
     uom: 'µS/cm'
@@ -52,6 +53,7 @@ outputs:
     constraint: 
       role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
       interval: ['0', '2000']
+    aggregator: 'AVG'
   - name: 'water-salinity'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:salinity'
     uom: 'ppt'
@@ -59,6 +61,7 @@ outputs:
     constraint: 
       role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
       interval: ['5', '60']
+    aggregator: 'AVG'
   - name: 'water-TDS-Kcl'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:tds-kcl'
     uom: 'ppm'
@@ -66,5 +69,6 @@ outputs:
     constraint: 
       role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
       interval: ['0', '133000']
+    aggregator: 'AVG'
 history: []
 mqtt: null

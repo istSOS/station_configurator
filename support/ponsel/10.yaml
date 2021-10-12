@@ -45,6 +45,7 @@ outputs:
     constraint: 
       role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
       interval: ['-10','60']
+    aggregator: 'AVG'
   - name: 'water-O2S'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:O2S'
     uom: '%'
@@ -52,6 +53,7 @@ outputs:
     constraint: 
       role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
       interval: ['0','200']
+    aggregator: 'AVG'
   - name: 'water-O2D'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:O2D'
     uom: 'mg/L'
@@ -59,6 +61,7 @@ outputs:
     constraint: 
       role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
       interval: ['0','20']
+    aggregator: 'AVG'
   - name: 'water-O2C'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:O2C'
     uom: 'ppm'
@@ -66,5 +69,6 @@ outputs:
     constraint: 
       role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
       interval: ['0','20']
+    aggregator: 'AVG'
 history: []
 mqtt: null

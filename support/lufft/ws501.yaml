@@ -45,6 +45,7 @@ outputs:
     constraint: 
       role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
       interval: ['0','100']
+    aggregator: 'AVG'
   - name: 'air-pressure'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:meteo:air:pressure'
     uom: 'hPa'
@@ -52,6 +53,7 @@ outputs:
     constraint: 
       role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
       interval: ['300','1200']
+    aggregator: 'AVG'
   - name: 'wind-direction'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:meteo:wind:direction'
     uom: '°'
@@ -59,6 +61,7 @@ outputs:
     constraint: 
       role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
       interval: ['0','360']
+    aggregator: 'AVG'
   - name: 'global-radiation'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:meteo:global:radiation'
     uom: 'W/m2'
@@ -66,6 +69,7 @@ outputs:
     constraint: 
       role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
       interval: ['0','2000']
+    aggregator: 'AVG'
   - name: 'air-temperature'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:meteo:air:temperature'
     uom: '°C'
@@ -73,6 +77,7 @@ outputs:
     constraint: 
       role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
       interval: ['-50','60']
+    aggregator: 'AVG'
   - name: 'wind-speed'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:meteo:wind:speed'
     uom: 'm/s'
@@ -80,6 +85,7 @@ outputs:
     constraint: 
       role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
       interval: ['0','75']
+    aggregator: 'AVG'
   - name: 'wind-speed-max'
     definition: 'urn:ogc:def:parameter:x-istsos:1.0:meteo:wind:speed:max'
     uom: 'm/s'
@@ -87,5 +93,6 @@ outputs:
     constraint: 
       role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
       interval: ['0','75']
+    aggregator: 'MAX'
 history: []
 mqtt: null
