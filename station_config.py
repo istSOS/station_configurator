@@ -483,23 +483,34 @@ class Station():
         for section in self.sections:
             self.logger.info(f'--> Installing sensor {section}')
             if self.config[section]['driver'] == 'ponsel':
-                if 'addr' in self.config[section].keys():
-                    sensor = Ponsel(
-                        self.config[section]['port'],
-                        int(self.config[section]['addr'])
-                    )
-                else:
-                    sensor = Ponsel(
-                        self.config[section]['port'],
-                        int(self.config[section]['type'])
-                    )
-                sensor.set_run_measurement(0x001f)
-                time.sleep(1)
-                description = sensor.get_pod_desc()
+                i = 0
+                while i<5:
+                    try:
+                        if 'addr' in self.config[section].keys():
+                            sensor = Ponsel(
+                                "{}{}".format(self.config[section]['port'], i),
+                                int(self.config[section]['addr'])
+                            )
+                        else:
+                            sensor = Ponsel(
+                                "{}{}".format(self.config[section]['port'], i),
+                                int(self.config[section]['type'])
+                            )
+                        sensor.set_run_measurement(0x001f)
+                        time.sleep(1)
+                        description = sensor.get_pod_desc()
+                        if description:
+                            break
+                        else:
+                            raise Exception()
+                    except:
+                        time.sleep(1)
+                        i+=1
+                        if i==5:
+                            raise Exception("Can\'t find sensor")
+                
+                self.logger.info(description)
                 if description:
-                    # self.logger.info(
-                    #     sensor.show_info()
-                    # )
                     self.insert_sensor(sensor, section)
                     if 'aggregation_time' in self.config[section].keys():
                         crt_srv_agg = self.create_service_agg(section)
@@ -529,29 +540,45 @@ class Station():
             elif self.config[section]['driver'] == 'lufft':
                 value_UMB = [200, 305, 500, 510, 900, 100, 110, 440, 400]
                 try:
-                    with WS_UMB(self.config[section]['port']) as umb:
-                        for v in value_UMB:
-                            value, st = umb.onlineDataQuery(v, int(self.config[section]['addr']))
-                            if st!=0:
-                                raise Exception('Not working')
-                        self.insert_sensor(umb, section)
-                        if 'aggregation_time' in self.config[section].keys():
-                            crt_srv_agg = self.create_service_agg(section)
-                            if crt_srv_agg['success']:
-                                self.insert_sensor(
-                                    umb, section,
-                                    agg=True
-                                )
-                                if self.remote:
-                                    self.insert_sensor(
-                                        umb, section,
-                                        agg=False, remote=True
+                    i = 0
+                    values = []
+                    while i<5:
+                        try:
+                            with WS_UMB("{}{}".format(self.config[section]['port'], i)) as umb:
+                                for v in value_UMB:
+                                    value, st = umb.onlineDataQuery(v, int(self.config[section]['addr']))
+                                    values.append(
+                                        round(value, 2)
                                     )
-                            else:
-                                self.logger.error(
-                                    '\t\t--> Aggregation service NOT created'
-                                )
-                                return crt_srv_agg
+                                self.insert_sensor(umb, section)
+                                if 'aggregation_time' in self.config[section].keys():
+                                    crt_srv_agg = self.create_service_agg(section)
+                                    if crt_srv_agg['success']:
+                                        self.insert_sensor(
+                                            umb, section,
+                                            agg=True
+                                        )
+                                        if self.remote:
+                                            self.insert_sensor(
+                                                umb, section,
+                                                agg=False, remote=True
+                                            )
+                                            break
+                                    else:
+                                        self.logger.error(
+                                            '\t\t--> Aggregation service NOT created'
+                                        )
+                                        return crt_srv_agg
+                        except:
+                            time.sleep(1)
+                            i+=1
+                            if i==5:
+                                raise Exception("Can\'t find sensor")
+                    # with WS_UMB(self.config[section]['port']) as umb:
+                    #     for v in value_UMB:
+                    #         value, st = umb.onlineDataQuery(v, int(self.config[section]['addr']))
+                    #         if st!=0:
+                    #             raise Exception('Not working')
                 except Exception as e:
                     return {
                         'success': False,
