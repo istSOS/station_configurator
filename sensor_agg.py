@@ -64,7 +64,7 @@ with open(
     ) as f:
         rs = yaml.safe_load(f)
         outputs = rs['outputs'][1:]
-
+print(outputs)
 now = datetime.now(timezone.utc)
 end_position = datetime(
     now.year, now.month, now.day,
@@ -202,19 +202,27 @@ print(" > Insert observation success: %s" % (
     res.json()['success']))
 
 aggregators = ['AVG', 'SUM', 'MIN', 'MAX']
-
+{
+    'name': 'water-Chl-a',
+    'definition': 'urn:ogc:def:parameter:x-istsos:1.0:water:Chl-a',
+    'uom': 'μg/L',
+    'description': '',
+    'constraint': {'role': 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable', 'interval': ['0', '400']},
+    'aggregator': 'AVG'
+}
 if not df_data.empty:
     columns = df_data.columns[1:]
     data_post = None
     idx = 0
     for col in columns:
-        if 'aggregator' in outputs[idx+1]:
-            aggregator = outputs[idx+1]['aggregator']
-        else:
-            aggregator = 'AVG'
-        if aggregator not in aggregators:
-            aggregator = 'AVG'
         if col.find('quality') < 0:
+            if 'aggregator' in outputs[idx]:
+                aggregator = outputs[idx]['aggregator']
+            else:
+                aggregator = 'AVG'
+            if aggregator not in aggregators:
+                aggregator = 'AVG'
+        
             df_filtered = df_data.loc[
                 df_data[columns[idx+1]] >= 104
             ]
