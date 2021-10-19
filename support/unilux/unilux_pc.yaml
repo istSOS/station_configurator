@@ -1,0 +1,50 @@
+system_id: null
+system: null
+description: 'Highly sensitive compact fluorometer for Phycocianin'
+keywords: 'chelsea technologies,unilux,sensor'
+identification:
+  - name: 'uniqueID'
+    definition: 'urn:ogc:def:identifier:OGC:uniqueID'
+    value: 'urn:ogc:def:procedure:x-istsos:1.0:'
+classification:
+  - name: 'System Type'
+    definition: 'urn:ogc:def:classifier:x-istsos:1.0:systemType'
+    value: 'insitu-fixed-point'
+  - name: 'Sensor Type'
+    definition: 'urn:ogc:def:classifier:x-istsos:1.0:sensorType'
+    value: 'UniLux Phycocianin'
+characteristics: 'https://chelsea.co.uk/wp-content/uploads/2019/05/1432_UniLux_2pp_V3_artwork_V2.pdf'
+contacts: []
+documentation: []
+capabilities: []
+location:
+  type: Feature
+  geometry: 
+    type: Point
+    coordinates:
+      - null
+      - null
+      - null
+  crs:
+    type: name
+    properties:
+      name: null
+  properties:
+    name: null
+interfaces: ''
+inputs: []
+outputs:
+  - name: Time
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:time:iso8601'
+    uom: iso8601
+    description: ''
+  - name: 'water-PC'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:PC'
+    uom: 'μg/L'
+    description: ''
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['0','400']
+    aggregator: 'AVG'
+history: []
+mqtt: null
