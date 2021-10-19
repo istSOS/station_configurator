@@ -89,3 +89,5 @@ Easy-to-use configurator to monitor environmental parameters with professional i
     **N.B. 2: if you are using a single MODBUS port to connect more than one sensor and if you are using more than one sensor of the same type, so with the same address, remember to configure different address for each sensor before start with the configuration**
 
 6. The name of the section will give the name to the sensor which will be register into the istSOS
+
+7. fix a astatic usb path https://rolfblijleven.blogspot.com/2015/02/howto-persistent-device-names-on.html

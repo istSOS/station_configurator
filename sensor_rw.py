@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import time
 import json
 import sys
+import statistics
 
 # external lib
 import requests
@@ -14,6 +15,7 @@ import yaml
 # supported devices
 from module.ponsel import Ponsel
 from module.lufft import WS_UMB
+from module.unilux import Unilux
 
 ___dir___ = os.path.abspath(os.getcwd())
 
@@ -41,64 +43,57 @@ sensor_type = section['type']
 sensor_driver = section['driver']
 
 # initialize and read data from sensor
-start = time.time()
-while True:
-    end = time.time()
+if sensor_driver == 'ponsel':
     try:
-        if sensor_driver == 'ponsel':
-            i = 0
-            while i<5:
-                try:
-                    sensor = Ponsel(
-                        "{}{}".format(section['port'], i),
-                        int(section['addr'])
-                    )
-                    sensor.set_run_measurement(0x001f)
-                    time.sleep(1)
-                    values = sensor.get_values()
-                    status = sensor.get_status()
-                    break
-                except:
-                    time.sleep(1)
-                    i+=1
-                    if i==5:
-                        raise Exception("Can\'t find sensor")
-            break
-        elif sensor_driver == 'lufft':
-            values = []
-            status = []
-            value_UMB = [
-                200, 305, 500,
-                900, 100, 400, 440
-            ]
-            i = 0
-            while i<5:
-                try:
-                    with WS_UMB("{}{}".format(section['port'], i)) as umb:
-                        for v in value_UMB:
-                            value, st = umb.onlineDataQuery(v, int(section['addr']))
-                            values.append(
-                                round(value, 2)
-                            )
-                            status.append(st)
-                    if values:
-                        break
-                except:
-                    time.sleep(1)
-                    i+=1
-                    if i==5:
-                        raise Exception("Can\'t find sensor")
-            if not values:
-                raise Exception('Sensor driver is not supported yet.')
-            else:
-                break
-        else:
-            raise Exception('Sensor driver is not supported yet.')
-    except Exception as e:
-        if (end-start) > 30:
-            raise e
-        else:
-            time.sleep(1.5)
+        sensor = Ponsel(
+            "{}".format(section['port']),
+            int(section['addr'])
+        )
+        sensor.set_run_measurement(0x001f)
+        time.sleep(1)
+        values = sensor.get_values()
+        status = sensor.get_status()
+    except:
+        raise Exception("Can\'t find sensor")
+
+elif sensor_driver == 'unilux':
+    s = Unilux("{}".format(section['port']))
+    s.start()
+    data = s.get_values()
+    try:
+        v = round(statistics.mean(data), 2)
+        values = [
+            round(statistics.mean(data), 2)
+        ]
+        status = [100]
+        if data:
+            s.stop()
+    except:
+        values = [-999.99]
+        status = [-100]
+
+elif sensor_driver == 'lufft':
+    values = []
+    status = []
+    value_UMB = [
+        200, 305, 500,
+        900, 100, 400, 440
+    ]
+    try:
+        with WS_UMB("{}".format(section['port'])) as umb:
+            for v in value_UMB:
+                value, st = umb.onlineDataQuery(v, int(section['addr']))
+                values.append(
+                    round(value, 2)
+                )
+                status.append(st)
+    except:
+        raise Exception("Can\'t find sensor")
+    if not values:
+        raise Exception('Sensor driver is not supported yet.')
+else:
+    raise Exception('Sensor driver is not supported yet.')
+
 data = None
 outputs = []
 separator = os.sep
