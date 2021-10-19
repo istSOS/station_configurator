@@ -8,6 +8,7 @@ import json
 import sys
 import argparse
 import getpass
+from lib import SaraR4
 
 # external lib
 import yaml
@@ -18,6 +19,7 @@ import logzero
 # sensors libs
 from module.ponsel import Ponsel
 from module.lufft import WS_UMB
+from module.unilux import Unilux
 
 __author__ = "Daniele Strigaro"
 __email__ = "daniele.strigaro@supsi.ch"
@@ -118,6 +120,7 @@ class Station():
 
         # checking configuration file
         self.check_default_section()
+        self.mqtt_login = False
 
     def save_config(self):
         """
@@ -126,6 +129,40 @@ class Station():
         """
         with open(__config__, 'w') as f:
             self.config.write(f)
+
+    def connect(self, serial_path, radio_mode, apn, umnoprof=100, debug=False):
+        try:
+            # SaraR4.reset()
+            self.sara_module = SaraR4.SaraR4Module(
+                serial_path=serial_path,
+                DEBUG=debug
+            )
+            # sara_module.set_umnoprof(umnoprof)
+            self.sara_module.set_radio_mode(radio_mode)
+            self.sara_module.set_provider_name(apn)
+            # sara_module.set_operator(22801, TIMEOUT=120)
+            
+            if not self.sara_module.init():
+                time.sleep(5)
+                if not self.sara_module.init():
+                    raise Exception("Can't connect to operator")
+            return self.sara_module
+        except Exception as e:
+            SaraR4.power_off()
+            raise e
+
+    def set_mqtt_params(self, mqtt_server, mqtt_port, mqtt_ssl, mqtt_user, mqtt_password):
+        self.sara_module.set_mqtt_params(
+            mqtt_server, mqtt_port,
+            mqtt_ssl, mqtt_user,
+            mqtt_password
+        )
+
+    def mqtt_logout(self):
+        return self.sara_module.mqtt_logout()
+
+    def mqtt_publish(self, topic, data):
+        self.sara_module.mqtt_publish(topic, data)
 
     def set_send_data(self):
         """
@@ -148,6 +185,12 @@ class Station():
             )
         elif self.config['DEFAULT']['transmission'] == 'mqtt':
             raise Exception("transmission: mqtt still to be implemented")
+        elif self.config['DEFAULT']['transmission'] == 'nbiot':
+            path_script = os.path.join(
+                __abspath__,
+                'send_data_nbiot.py'
+            )
+            
         else:
             raise Exception("transmission: transmission type not recognized")
 
@@ -400,6 +443,10 @@ class Station():
                 rs['classification'][1]['value'] = sensor.get_pod_desc()
             elif section_obj['driver'] == 'lufft':
                 rs['system_id'] = section
+            elif section_obj['driver'] == 'unilux':
+                rs['system_id'] = section
+            elif section_obj['driver'] == 'unilux':
+                rs['system_id'] = section
             rs['system'] = section
             rs['identification'][0][
                 'value'] = rs['identification'][0]['value'] + section
@@ -458,6 +505,10 @@ class Station():
                         else:
                             self.config[section]['assigned_id'] = assigned_id
                         self.save_config()
+                    else:
+                        assigned_id = req.text.split(':')[-2].split('<')[0]
+                        self.config[section]['assignedremote_id'] = assigned_id
+                        self.save_config()
                 else:
                     check_idx = req.text.find("already exist")
                     if check_idx > 0:
@@ -483,31 +534,23 @@ class Station():
         for section in self.sections:
             self.logger.info(f'--> Installing sensor {section}')
             if self.config[section]['driver'] == 'ponsel':
-                i = 0
-                while i<5:
-                    try:
-                        if 'addr' in self.config[section].keys():
-                            sensor = Ponsel(
-                                "{}{}".format(self.config[section]['port'], i),
-                                int(self.config[section]['addr'])
-                            )
-                        else:
-                            sensor = Ponsel(
-                                "{}{}".format(self.config[section]['port'], i),
-                                int(self.config[section]['type'])
-                            )
-                        sensor.set_run_measurement(0x001f)
-                        time.sleep(1)
-                        description = sensor.get_pod_desc()
-                        if description:
-                            break
-                        else:
-                            raise Exception()
-                    except:
-                        time.sleep(1)
-                        i+=1
-                        if i==5:
-                            raise Exception("Can\'t find sensor")
+                try:
+                    if 'addr' in self.config[section].keys():
+                        sensor = Ponsel(
+                            "{}".format(self.config[section]['port']),
+                            int(self.config[section]['addr'])
+                        )
+                    else:
+                        sensor = Ponsel(
+                            "{}".format(self.config[section]['port']),
+                            int(self.config[section]['type'])
+                        )
+                    sensor.set_run_measurement(0x001f)
+                    time.sleep(1)
+                    description = sensor.get_pod_desc()
+                except:
+                    time.sleep(1)
+                    raise Exception("Can\'t find sensor")
                 
                 self.logger.info(description)
                 if description:
@@ -537,43 +580,67 @@ class Station():
                 self.logger.info(
                     f'--> Sensor {section} INSTALLED'
                 )
+            elif self.config[section]['driver'] == 'unilux':
+                try:
+                    s = Unilux("{}".format(self.config[section]['port']))
+                    s.start()
+                    data = s.get_values()
+                    if data:
+                        s.stop()
+                        self.insert_sensor(umb, section)
+                        if 'aggregation_time' in self.config[section].keys():
+                            crt_srv_agg = self.create_service_agg(section)
+                            if crt_srv_agg['success']:
+                                self.insert_sensor(
+                                    umb, section,
+                                    agg=True
+                                )
+                                if self.remote:
+                                    self.insert_sensor(
+                                        umb, section,
+                                        agg=False, remote=True
+                                    )
+                            else:
+                                self.logger.error(
+                                    '\t\t--> Aggregation service NOT created'
+                                )
+                                return crt_srv_agg
+                    else:
+                        s.stop()
+                        raise Exception("Can\'t get data from Unilux")
+                except Exception as e:
+                    raise Exception("Can\'t find sensor")
             elif self.config[section]['driver'] == 'lufft':
                 value_UMB = [200, 305, 500, 510, 900, 100, 110, 440, 400]
                 try:
-                    i = 0
                     values = []
-                    while i<5:
-                        try:
-                            with WS_UMB("{}{}".format(self.config[section]['port'], i)) as umb:
-                                for v in value_UMB:
-                                    value, st = umb.onlineDataQuery(v, int(self.config[section]['addr']))
-                                    values.append(
-                                        round(value, 2)
+                    try:
+                        with WS_UMB("{}".format(self.config[section]['port'])) as umb:
+                            for v in value_UMB:
+                                value, st = umb.onlineDataQuery(v, int(self.config[section]['addr']))
+                                values.append(
+                                    round(value, 2)
+                                )
+                            self.insert_sensor(umb, section)
+                            if 'aggregation_time' in self.config[section].keys():
+                                crt_srv_agg = self.create_service_agg(section)
+                                if crt_srv_agg['success']:
+                                    self.insert_sensor(
+                                        umb, section,
+                                        agg=True
                                     )
-                                self.insert_sensor(umb, section)
-                                if 'aggregation_time' in self.config[section].keys():
-                                    crt_srv_agg = self.create_service_agg(section)
-                                    if crt_srv_agg['success']:
+                                    if self.remote:
                                         self.insert_sensor(
                                             umb, section,
-                                            agg=True
+                                            agg=False, remote=True
                                         )
-                                        if self.remote:
-                                            self.insert_sensor(
-                                                umb, section,
-                                                agg=False, remote=True
-                                            )
-                                            break
-                                    else:
-                                        self.logger.error(
-                                            '\t\t--> Aggregation service NOT created'
-                                        )
-                                        return crt_srv_agg
-                        except:
-                            time.sleep(1)
-                            i+=1
-                            if i==5:
-                                raise Exception("Can\'t find sensor")
+                                else:
+                                    self.logger.error(
+                                        '\t\t--> Aggregation service NOT created'
+                                    )
+                                    return crt_srv_agg
+                    except:
+                        raise Exception("Can\'t find sensor")
                     # with WS_UMB(self.config[section]['port']) as umb:
                     #     for v in value_UMB:
                     #         value, st = umb.onlineDataQuery(v, int(self.config[section]['addr']))
@@ -633,7 +700,7 @@ class Station():
                     'ERROR --> transmission is not set.'
                 )
             elif self.config.defaults()['transmission'] not in [
-                    'lora', 'serial', 'nb-iot', 'lte']:
+                    'lora', 'serial', 'nbiot', 'lte']:
                 self.logger.error(
                     'transmission is not set correctly.'
                     ' Accepted values: lora, serial'
@@ -953,7 +1020,29 @@ def execute(args):
         logger.error(str(e))
         raise e
 
+# def test_connect():
+#     python_path = sys.executable
+#     s = Station()
+#     s.connect('/dev/serial0', 8, "shared.m2m.ch", debug=True)
 
+#     s.set_mqtt_params(
+#         'istsos.ddns.net',
+#         1883,
+#         0,
+#         'simile',
+#         'simile'
+#     )
+#     s.mqtt_publish(
+#         'istsos/{}/{}'.format(
+#             'test',
+#             'asd'
+#         ),
+#         'asd'
+#     )
+#     s.mqtt_logout()
+#     s.mqtt_login = False
+
+    
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Set-up your station'
@@ -982,3 +1071,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     execute(args.__dict__)
+    # test_connect()
