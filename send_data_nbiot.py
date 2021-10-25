@@ -287,6 +287,7 @@ for section in config.sections():
         SaraR4.power_off()
         logging.info('Cannot send not aggregated data')
 
+SaraR4.power_off()
 # # use the QI to know if a data is sent or not
 
 # # &qualityfilter=%3E210
