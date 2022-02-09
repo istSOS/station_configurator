@@ -106,7 +106,6 @@ class Station():
         if self.remote_istsos_auth_type == 'oauth':
             self.remote_oauth_token_url = self.config['DEFAULT']['remote_oauth_token_url']
             self.remote_oauth_client_id = self.config['DEFAULT']['remote_oauth_client_id']
-            self.remote_oauth_client_secret = self.config['DEFAULT']['remote_oauth_client_secret']
             body_data = {
                 "username": self.config['DEFAULT']['remote_istsos_user'],
                 "password": self.config['DEFAULT']['remote_istsos_password'],
