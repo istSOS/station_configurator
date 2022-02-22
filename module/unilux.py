@@ -70,7 +70,7 @@ class Unilux():
                 values.append(v)
             except:
                 continue
-            time.sleep(0.25)
+            time.sleep(0.02)
             o += 1
         return values
     
