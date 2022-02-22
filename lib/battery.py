@@ -60,14 +60,20 @@ def read_ina219():
         #ina.configure(ina.RANGE_16V)
         ina = INA219(
             SHUNT_OHMS, 1.6, address=ADDRESS
+        )   
+        # ina.configure(ina.RANGE_32V, ina.GAIN_8_320MV)
+        ina.configure(
+            voltage_range=ina.RANGE_16V,
+            gain=ina.GAIN_AUTO,
+            bus_adc=ina.ADC_128SAMP,
+            shunt_adc=ina.ADC_128SAMP
         )
-        ina.configure(ina.RANGE_32V, ina.GAIN_8_320MV)
         # ina.configure()
         print('Bus Voltage: {0:0.2f}V'.format(ina.voltage()))
         print('Bus Current: {0:0.2f}mA'.format(ina.current()))
         print('Power: {0:0.2f}mW'.format(ina.power()))
         print('Shunt Voltage: {0:0.2f}mV\n'.format(ina.shunt_voltage()))
-        return to_255(ina.voltage())
+        return [ina.voltage(), ina.current()]
     except DeviceRangeError as e:
         # Current out of device range with specified shunt resister
         print("DeviceRangeError")
