@@ -160,7 +160,7 @@ class SaraR4Module:
             while True:
                 try:
                     self.ser = serial.Serial(
-                        serial_path,
+                        self.serial_path,
                         baudrate=self.BAUDRATE,
                         timeout=5
                     )
