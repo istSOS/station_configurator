@@ -35,6 +35,7 @@ import yaml
 from module.ponsel import Ponsel
 from module.lufft import WS_UMB
 from module.unilux import Unilux
+from module.ina219 import read_ina219
 
 ___dir___ = os.path.abspath(os.getcwd())
 
@@ -69,12 +70,11 @@ if sensor_driver == 'ponsel':
             int(section['addr'])
         )
         sensor.set_run_measurement(0x001f)
-        time.sleep(1)
+        time.sleep(0.25)
         values = sensor.get_values()
         status = sensor.get_status()
     except:
         raise Exception("Can\'t find sensor")
-
 elif sensor_driver == 'unilux':
     s = Unilux("{}".format(section['port']))
     s.start()
@@ -90,7 +90,6 @@ elif sensor_driver == 'unilux':
     except:
         values = [-999.99]
         status = [-100]
-
 elif sensor_driver == 'lufft':
     values = []
     status = []
@@ -106,6 +105,16 @@ elif sensor_driver == 'lufft':
                     round(value, 2)
                 )
                 status.append(st)
+    except:
+        raise Exception("Can\'t find sensor")
+    if not values:
+        raise Exception('Sensor driver is not supported yet.')
+elif sensor_driver == 'ina219':
+    values = []
+    status = []
+    try:
+        values = read_ina219()
+        status = [100, 100]
     except:
         raise Exception("Can\'t find sensor")
     if not values:
