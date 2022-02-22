@@ -38,6 +38,7 @@ import logzero
 from module.ponsel import Ponsel
 from module.lufft import WS_UMB
 from module.unilux import Unilux
+from module.ina219 import read_ina219
 
 __author__ = "Daniele Strigaro"
 __email__ = "daniele.strigaro@supsi.ch"
@@ -225,7 +226,7 @@ class Station():
             f'send_data.log'
         )
         command = (
-            f'{python_path} {path_script}'
+            f'/usr/bin/flock -w 0 /tmp/send.lock {python_path} {path_script}'
             f' -c {path_config} >> {path_log} 2>&1'
         )
         add_cron = True
@@ -429,7 +430,7 @@ class Station():
                 if sh in job.command:
                     add_cron = False
             if add_cron:
-                job = cron.new(command=f"sh {sh}")
+                job = cron.new(command=f"/usr/bin/flock -w 0 /tmp/sampling.lock sh {sh}")
                 every = sh.split('_')[-1].split('.')[0]
                 job.minute.every(int(every))
                 cron.write()
@@ -462,7 +463,7 @@ class Station():
                 rs['system_id'] = section
             elif section_obj['driver'] == 'unilux':
                 rs['system_id'] = section
-            elif section_obj['driver'] == 'unilux':
+            elif section_obj['driver'] == 'ina219':
                 rs['system_id'] = section
             rs['system'] = section
             rs['identification'][0][
@@ -638,24 +639,24 @@ class Station():
                                 values.append(
                                     round(value, 2)
                                 )
-                            self.insert_sensor(umb, section)
-                            if 'aggregation_time' in self.config[section].keys():
-                                crt_srv_agg = self.create_service_agg(section)
-                                if crt_srv_agg['success']:
+                        self.insert_sensor(umb, section)
+                        if 'aggregation_time' in self.config[section].keys():
+                            crt_srv_agg = self.create_service_agg(section)
+                            if crt_srv_agg['success']:
+                                self.insert_sensor(
+                                    umb, section,
+                                    agg=True
+                                )
+                                if self.remote:
                                     self.insert_sensor(
                                         umb, section,
-                                        agg=True
+                                        agg=False, remote=True
                                     )
-                                    if self.remote:
-                                        self.insert_sensor(
-                                            umb, section,
-                                            agg=False, remote=True
-                                        )
-                                else:
-                                    self.logger.error(
-                                        '\t\t--> Aggregation service NOT created'
-                                    )
-                                    return crt_srv_agg
+                            else:
+                                self.logger.error(
+                                    '\t\t--> Aggregation service NOT created'
+                                )
+                                return crt_srv_agg
                     except:
                         raise Exception("Can\'t find sensor")
                     # with WS_UMB(self.config[section]['port']) as umb:
@@ -668,7 +669,36 @@ class Station():
                         'success': False,
                         'msg': '\t\t--> Can\'t find lufft sensor'
                     }
-
+            elif self.config[section]['driver'] == 'ina219':
+                try:
+                    values = []
+                    try:
+                        data = read_ina219()
+                        self.insert_sensor(data, section)
+                        if 'aggregation_time' in self.config[section].keys():
+                            crt_srv_agg = self.create_service_agg(section)
+                            if crt_srv_agg['success']:
+                                self.insert_sensor(
+                                    umb, section,
+                                    agg=True
+                                )
+                                if self.remote:
+                                    self.insert_sensor(
+                                        umb, section,
+                                        agg=False, remote=True
+                                    )
+                            else:
+                                self.logger.error(
+                                    '\t\t--> Aggregation service NOT created'
+                                )
+                                return crt_srv_agg
+                    except:
+                        raise Exception("Can\'t find sensor")
+                except Exception as e:
+                    return {
+                        'success': False,
+                        'msg': '\t\t--> Can\'t find lufft sensor'
+                    }
             else:
                 self.logger.error(
                     'Sensor type not supported.'
