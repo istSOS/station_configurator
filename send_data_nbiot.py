@@ -181,8 +181,8 @@ for section in config.sections():
                             try:
                                 if not mqtt_logged:
                                     sara_module = connect(
-                                        '/dev/serial0', 8,
-                                        'shared.m2m.ch', debug=True
+                                        modem_serial_path, modem_radio_mode,
+                                        modem_apn, debug=True
                                     )
                                     set_mqtt_params(
                                         sara_module, mqtt_address,
