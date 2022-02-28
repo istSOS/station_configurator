@@ -47,8 +47,9 @@ LTE_RESET_PULSE_PERIOD=10
 
 # PIN CONFIGURATION
 PWR_PIN=7
-RST_PIN=11
-RTS_PIN=13
+RST_PIN=13
+RTS_PIN=11
+CTS_PIN=36
 
 base_path = os.path.abspath(os.getcwd())
 
@@ -73,7 +74,6 @@ def reset_v1():
 def reset():
     GPIO.setmode(GPIO.BOARD)
     mode = GPIO.getmode()
-    # Set RTS pin down to enable UART communication
     GPIO.setup(RST_PIN, GPIO.OUT, initial=GPIO.HIGH)
     GPIO.output(RST_PIN, GPIO.LOW)
     time.sleep(LTE_RESET_PULSE_PERIOD)
@@ -84,9 +84,8 @@ def power_on():
     # init GPIO
     GPIO.setmode(GPIO.BOARD)
     mode = GPIO.getmode()
-    # Set RTS pin down to enable UART communication
-    GPIO.setup(RTS_PIN, GPIO.OUT, initial=GPIO.LOW)
     GPIO.setup(PWR_PIN, GPIO.OUT, initial=GPIO.HIGH)
+    GPIO.setup(RTS_PIN, GPIO.OUT, initial=GPIO.LOW)
     GPIO.output(PWR_PIN, GPIO.LOW)
     time.sleep(LTE_SHIELD_POWER_PULSE_PERIOD)
     GPIO.output(PWR_PIN, GPIO.HIGH)
@@ -104,8 +103,8 @@ class SaraR4Module:
 
     # PIN CONFIGURATION
     PWR_PIN=7
-    RST_PIN=11
-    RTS_PIN=13
+    RST_PIN=13
+    RTS_PIN=11
 
     # SERIAL
     BAUDRATE=115200
@@ -114,7 +113,8 @@ class SaraR4Module:
     # GENERAL
     TIMEOUT = 1.5
 
-    def __init__(self, serial_path=None, DEBUG=False, USB_SERIAL=False):
+    def __init__(self, serial_path=None, DEBUG=False, USB_SERIAL=False, BAUDRATE=9600):
+        self.BAUDRATE = BAUDRATE
         self.DEBUG = DEBUG
         self.USB_SERIAL = USB_SERIAL
         self.ser = None
@@ -162,7 +162,10 @@ class SaraR4Module:
                     self.ser = serial.Serial(
                         self.serial_path,
                         baudrate=self.BAUDRATE,
-                        timeout=5
+                        timeout=5,
+                        parity=serial.PARITY_NONE,
+                        stopbits=serial.STOPBITS_ONE,
+                        bytesize=serial.EIGHTBITS
                     )
                     if self.at_command("AT", timeout=1):
                         break
@@ -198,7 +201,10 @@ class SaraR4Module:
                 self.ser = serial.Serial(
                     self.serial_path,
                     baudrate=self.BAUDRATE,
-                    timeout=5
+                    timeout=5,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS
                 )
                 if self.at_command("AT", timeout=1):
                     break
@@ -243,13 +249,16 @@ class SaraR4Module:
         elif __PLATFORM__=='Jetson':
             serial_code = 'ttyTHS'
         else:
-            serial_code = 'ttyS'
+            serial_code = 'ttyUSB'
         while i<5:
             try:
                 ser =serial.Serial(
                     f"/dev/tty{serial_code}{i}",
                     baudrate=self.BAUDRATE,
-                    timeout=5
+                    timeout=5,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS
                 )
                 self.ser = ser
                 if self.at_command("AT", timeout=3):
@@ -283,7 +292,10 @@ class SaraR4Module:
                 self.ser = serial.Serial(
                     f"/dev/ttyUSB{i}",
                     baudrate=self.BAUDRATE,
-                    timeout=5
+                    timeout=5,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS
                 )
                 if self.at_command("AT", timeout=5):
                     logging.info(f"Device found at /dev/ttyUSB{i}")
