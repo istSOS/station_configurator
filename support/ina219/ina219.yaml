@@ -1,0 +1,71 @@
+# Copyright (C) 2022 IST-SUPSI (www.supsi.ch/ist)
+# 
+# Author: Daniele Strigaro
+# 
+# This file is part of station_configurator.
+# 
+# station_configurator is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# station_configurator is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with station_configurator.  If not, see <http://www.gnu.org/licenses/>.
+
+system_id: null
+system: null
+description: 'The INA219 is a current shunt and power monitor with an I2C- or SMBUS-compatible interface. The device monitors both shunt voltage drop and bus supply voltage, with programmable conversion times and filtering.'
+keywords: 'ina219,sensor'
+identification:
+  - name: 'uniqueID'
+    definition: 'urn:ogc:def:identifier:OGC:uniqueID'
+    value: 'urn:ogc:def:procedure:x-istsos:1.0:'
+classification:
+  - name: 'System Type'
+    definition: 'urn:ogc:def:classifier:x-istsos:1.0:systemType'
+    value: 'insitu-fixed-point'
+  - name: 'Sensor Type'
+    definition: 'urn:ogc:def:classifier:x-istsos:1.0:sensorType'
+    value: 'INA219'
+characteristics: 'https://cdn-shop.adafruit.com/datasheets/ina219.pdf'
+contacts: []
+documentation: []
+capabilities: []
+location:
+  type: Feature
+  geometry: 
+    type: Point
+    coordinates:
+      - null
+      - null
+      - null
+  crs:
+    type: name
+    properties:
+      name: null
+  properties:
+    name: null
+interfaces: ''
+inputs: []
+outputs:
+  - name: Time
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:time:iso8601'
+    uom: iso8601
+    description: ''
+  - name: 'battery-voltage'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:battery:voltage'
+    uom: 'V'
+    description: ''
+    aggregator: 'AVG'
+  - name: 'battery-current'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:battery:current'
+    uom: 'A'
+    description: ''
+    aggregator: 'AVG'
+history: []
+mqtt: null
