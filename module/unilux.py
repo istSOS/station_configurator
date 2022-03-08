@@ -34,7 +34,9 @@ class Unilux():
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
             bytesize=serial.EIGHTBITS,
-            interCharTimeout=1
+            interCharTimeout=1,
+            timeout=2.0,
+            write_timeout=2.0
         )
     
     def read(self, timeout=1):
@@ -69,6 +71,7 @@ class Unilux():
                 v = float(v)
                 values.append(v)
             except:
+                values.append(-999.99)
                 continue
             time.sleep(0.02)
             o += 1
