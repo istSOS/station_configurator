@@ -74,12 +74,14 @@ if sensor_driver == 'ponsel':
         values = sensor.get_values()
         status = sensor.get_status()
     except:
-        raise Exception("Can\'t find sensor")
+        values = [-999.99, -999.99, -999.99 , -999.99]
+        status = [-100, -100, -100, -100]
+        print("Can\'t find sensor")
 elif sensor_driver == 'unilux':
-    s = Unilux("{}".format(section['port']))
-    s.start()
-    data = s.get_values()
     try:
+        s = Unilux("{}".format(section['port']))
+        s.start()
+        data = s.get_values()
         v = round(statistics.mean(data), 2)
         values = [
             round(statistics.mean(data), 2)
@@ -90,6 +92,7 @@ elif sensor_driver == 'unilux':
     except:
         values = [-999.99]
         status = [-100]
+        print("Can\'t find sensor")
 elif sensor_driver == 'lufft':
     values = []
     status = []
@@ -106,7 +109,8 @@ elif sensor_driver == 'lufft':
                 )
                 status.append(st)
     except:
-        raise Exception("Can\'t find sensor")
+        values = [-999.99, -999.99, -999.99 , -999.99, -999.99, -999.99, -999.99]
+        status = [-100, -100, -100, -100, -100, -100, -100]
     if not values:
         raise Exception('Sensor driver is not supported yet.')
 elif sensor_driver == 'ina219':
@@ -116,7 +120,9 @@ elif sensor_driver == 'ina219':
         values = read_ina219()
         status = [100, 100]
     except:
-        raise Exception("Can\'t find sensor")
+        values = [-999.99, -999.99]
+        status = [-100, -100]
+        print("Can\'t find sensor")
     if not values:
         raise Exception('Sensor driver is not supported yet.')
 else:
@@ -223,11 +229,11 @@ try:
     if usb_log:
         mode = 'w'
         file_name = 'LOG.txt'
-        for item in os.listdir('/media/usb'):
+        for item in os.listdir('/media/usb0'):
             if item == file_name:
                 mode = 'a'
         # try some standard file operations
-        with open('/media/usb/LOG.txt', mode) as f:
+        with open('/media/usb0/LOG.txt', mode) as f:
             f.write(section_name + "," + data_post + "\n")
             f.close()
 except Exception as e:
