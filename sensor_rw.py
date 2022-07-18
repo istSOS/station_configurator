@@ -82,9 +82,14 @@ elif sensor_driver == 'unilux':
         s = Unilux("{}".format(section['port']))
         s.start()
         data = s.get_values()
-        v = round(statistics.mean(data), 2)
+        print(data)
+        filtered_data=[]
+        for d in data:
+            if d >=0:
+                filtered_data.append(d)
+        #v = round(statistics.mean(data), 2)
         values = [
-            round(statistics.mean(data), 2)
+            round(statistics.mean(filtered_data), 2)
         ]
         status = [100]
         if data:
@@ -92,6 +97,8 @@ elif sensor_driver == 'unilux':
     except:
         values = [-999.99]
         status = [-100]
+        if data:
+            s.stop()
         print("Can\'t find sensor")
 elif sensor_driver == 'lufft':
     values = []

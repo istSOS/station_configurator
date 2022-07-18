@@ -34,7 +34,7 @@ class Unilux():
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
             bytesize=serial.EIGHTBITS,
-            interCharTimeout=1,
+            #interCharTimeout=1,
             timeout=2.0,
             write_timeout=2.0
         )
@@ -51,7 +51,7 @@ class Unilux():
                 timeout_count += 1
                 if timeout is not None and timeout_count >= 10 * timeout:
                     break
-                time.sleep(0.01)
+                time.sleep(0.2)
         return data
     
     def write(self, cmd, timeout=1):
@@ -73,7 +73,7 @@ class Unilux():
             except:
                 values.append(-999.99)
                 continue
-            time.sleep(0.02)
+            time.sleep(0.2)
             o += 1
         return values
     
