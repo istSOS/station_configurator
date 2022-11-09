@@ -912,7 +912,8 @@ class Station():
                 removed = True
                 cron.remove(job)
                 if '.sh' in job.command:
-                    file_sh = job.command.split(' ')[1]
+                    file_sh = job.command.split(' ')[-1]
+                    # self.logger.info(job.command.split(' '))
                     os.remove(file_sh)
         cron.write()
         return {'success': True}
