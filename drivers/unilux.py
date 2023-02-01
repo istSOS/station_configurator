@@ -65,6 +65,8 @@ class Unilux():
         values = []
         o = 0
         while len(values)<5:
+            if o > 10:
+                break
             c = self.serial.readline()
             v = c.decode().strip("\r\n")
             try:

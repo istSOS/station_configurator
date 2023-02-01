@@ -1,0 +1,66 @@
+system_id: null
+system: null
+description: 'Low cost, miniature algae sensor that monitors three key algal parameters in a single probe (Chlorophyll-a, Turbidity, Phycocyanin).'
+keywords: 'chelsea technologies,trilux,sensor'
+identification:
+  - name: 'uniqueID'
+    definition: 'urn:ogc:def:identifier:OGC:uniqueID'
+    value: 'urn:ogc:def:procedure:x-istsos:1.0:'
+classification:
+  - name: 'System Type'
+    definition: 'urn:ogc:def:classifier:x-istsos:1.0:systemType'
+    value: 'insitu-fixed-point'
+  - name: 'Sensor Type'
+    definition: 'urn:ogc:def:classifier:x-istsos:1.0:sensorType'
+    value: 'Trilux Chlorophyll-a, Turbidity, Phycocyanin'
+characteristics: 'https://chelsea.co.uk/wp-content/uploads/2019/05/Trilux-2000-m_Datasheet_V2.pdf'
+contacts: []
+documentation: []
+capabilities: []
+location:
+  type: Feature
+  geometry: 
+    type: Point
+    coordinates:
+      - null
+      - null
+      - null
+  crs:
+    type: name
+    properties:
+      name: null
+  properties:
+    name: null
+interfaces: ''
+inputs: []
+outputs:
+  - name: Time
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:time:iso8601'
+    uom: iso8601
+    description: ''
+  - name: 'water-Chl-a'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:Chl-a'
+    uom: 'μg/L'
+    description: ''
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['0','100']
+    aggregator: 'AVG'
+  - name: 'water-Turb'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:Turb'
+    uom: 'μg/L'
+    description: ''
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['0','100']
+    aggregator: 'AVG'
+  - name: 'water-PC'
+    definition: 'urn:ogc:def:parameter:x-istsos:1.0:water:PC'
+    uom: 'μg/L'
+    description: ''
+    constraint: 
+      role: 'urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable'
+      interval: ['0','100']
+    aggregator: 'AVG'
+history: []
+mqtt: null

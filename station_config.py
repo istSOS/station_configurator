@@ -35,10 +35,11 @@ from crontab import CronTab
 import logzero
 
 # sensors libs
-from module.ponsel import Ponsel
-from module.lufft import WS_UMB
-from module.unilux import Unilux
-from module.ina219 import read_ina219
+from drivers.ponsel import Ponsel
+from drivers.lufft import WS_UMB
+from drivers.unilux import Unilux
+from drivers.trilux import Trilux
+from drivers.ina219 import read_ina219
 
 __author__ = "Daniele Strigaro"
 __email__ = "daniele.strigaro@supsi.ch"
@@ -463,6 +464,8 @@ class Station():
                 rs['system_id'] = section
             elif section_obj['driver'] == 'unilux':
                 rs['system_id'] = section
+            elif section_obj['driver'] == 'trilux':
+                rs['system_id'] = section
             elif section_obj['driver'] == 'ina219':
                 rs['system_id'] = section
             rs['system'] = section
@@ -626,6 +629,36 @@ class Station():
                     else:
                         s.stop()
                         raise Exception("Can\'t get data from Unilux")
+                except Exception as e:
+                    raise Exception("Can\'t find sensor")
+            elif self.config[section]['driver'] == 'trilux':
+                try:
+                    s = Trilux("{}".format(self.config[section]['port']))
+                    s.start()
+                    data = s.get_values()
+                    if data:
+                        s.stop()
+                        self.insert_sensor(umb, section)
+                        if 'aggregation_time' in self.config[section].keys():
+                            crt_srv_agg = self.create_service_agg(section)
+                            if crt_srv_agg['success']:
+                                self.insert_sensor(
+                                    umb, section,
+                                    agg=True
+                                )
+                                if self.remote:
+                                    self.insert_sensor(
+                                        umb, section,
+                                        agg=False, remote=True
+                                    )
+                            else:
+                                self.logger.error(
+                                    '\t\t--> Aggregation service NOT created'
+                                )
+                                return crt_srv_agg
+                    else:
+                        s.stop()
+                        raise Exception("Can\'t get data from Trlilux")
                 except Exception as e:
                     raise Exception("Can\'t find sensor")
             elif self.config[section]['driver'] == 'lufft':
