@@ -7,7 +7,11 @@ Easy-to-use configurator to monitor environmental parameters with professional i
 1. istSOS installed locally (www.istsos.org)
 2. Python 3
 3. Python 3 pip
-4. Supported only Ponsel instruments with ModBus 485 communication protocol
+4. Supported instruments:
+    - Ponsel instruments with ModBus 485 communication protocol
+    - Lufft compact weather station WS-501 with ModBus 485 communication protocol
+    - Unilux by Chelsea Technologies with RS232 communication protocol
+    - Trilux by Chelsea Technologies with RS232 communication protocol
 5. Raspberry pi or other Linux device with a ModBus compatible port
 
 # How to use
@@ -18,24 +22,40 @@ Easy-to-use configurator to monitor environmental parameters with professional i
         git clone https://gitlab.com/danistrigaro/station_configurator.git
         ```
 
-2. Navigate inside the repository's folder
-        
+2. Very important to disable ModemManager module otherwise USB serial communication is not reliable
+        ```bash
+        sudo systemctl disable ModemManager
+        ```
+
+3. Install postgresql-client
+
+        ```bash
+        sudo apt install build-essential
+        sudo apt install postgresql-client
+        sudo apt install python3-dev libpq-dev
+        sudo apt-get install libxml2-dev libxslt1-dev
+        ```
+
+4. Navigate inside the repository's folder
+
         ```bash
         cd station_configurator/
         ```
-3. Install the *requirements.txt* using pip
+
+5. Install the *requirements.txt* using pip
 
         ```bash
         pip install -r requirements.txt
         ```
 
-4. Edit and configure the section **DEFAULT** in the file *default.cfg*. Hereinafter each parameter is explained:
+6. Edit and configure the section **DEFAULT** in the file *default.cfg*. Hereinafter each parameter is explained:
 
     - **transmission**: one of
-        - *serial*: (to be implemented) (*default*)
-        - *wifi*: (to be implemented)
-        - *nb-iot*: (to be implemented)
-        
+        - *nb-iot*: LTE CAT1/NB-IoT: (default)
+        - *lora*: LoRaWAN(default)
+        - *serial*: Serial (to be implemented)
+        - *wifi*: WiFi (to be implemented)
+
         This setting defined how to transmit data to the data center.
     - **istsos**: str
         - *http://localhost/istsos*: url of istSOS (*default*)
@@ -82,12 +102,12 @@ Easy-to-use configurator to monitor environmental parameters with professional i
         remote_password = batman
         ```
 
-5. In the *default.cfg* file add as many sections as sensors you have. Take a look into the point 6 to have more information.
+7. In the *default.cfg* file add as many sections as sensors you have. Take a look into the point 6 to have more information.
 
     **N.B. 1: if you are using a single MODBUS port to connect more than one sensor remember to use the same *sampling_time* number** 
 
     **N.B. 2: if you are using a single MODBUS port to connect more than one sensor and if you are using more than one sensor of the same type, so with the same address, remember to configure different address for each sensor before start with the configuration**
 
-6. The name of the section will give the name to the sensor which will be register into the istSOS
+8. The name of the section will give the name to the sensor which will be register into the istSOS
 
-7. fix a astatic usb path https://rolfblijleven.blogspot.com/2015/02/howto-persistent-device-names-on.html
+9. fix a astatic usb path https://rolfblijleven.blogspot.com/2015/02/howto-persistent-device-names-on.html
