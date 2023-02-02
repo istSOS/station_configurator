@@ -275,6 +275,7 @@ class Station():
             data=json.dumps(data_post),
             auth=self.istsos_auth
         )
+        self.logger.info(f'{self.istsos_url}/wa/istsos/services')
         if req.status_code == 200:
             check_idx = req.text.find("true")
             if check_idx > 0:
@@ -608,17 +609,17 @@ class Station():
                     data = s.get_values()
                     if data:
                         s.stop()
-                        self.insert_sensor(umb, section)
+                        self.insert_sensor(None, section)
                         if 'aggregation_time' in self.config[section].keys():
                             crt_srv_agg = self.create_service_agg(section)
                             if crt_srv_agg['success']:
                                 self.insert_sensor(
-                                    umb, section,
+                                    None, section,
                                     agg=True
                                 )
                                 if self.remote:
                                     self.insert_sensor(
-                                        umb, section,
+                                        None, section,
                                         agg=False, remote=True
                                     )
                             else:
@@ -638,17 +639,17 @@ class Station():
                     data = s.get_values()
                     if data:
                         s.stop()
-                        self.insert_sensor(umb, section)
+                        self.insert_sensor(None, section)
                         if 'aggregation_time' in self.config[section].keys():
                             crt_srv_agg = self.create_service_agg(section)
                             if crt_srv_agg['success']:
                                 self.insert_sensor(
-                                    umb, section,
+                                    None, section,
                                     agg=True
                                 )
                                 if self.remote:
                                     self.insert_sensor(
-                                        umb, section,
+                                        None, section,
                                         agg=False, remote=True
                                     )
                             else:
@@ -707,17 +708,17 @@ class Station():
                     values = []
                     try:
                         data = read_ina219()
-                        self.insert_sensor(data, section)
+                        self.insert_sensor(None, section)
                         if 'aggregation_time' in self.config[section].keys():
                             crt_srv_agg = self.create_service_agg(section)
                             if crt_srv_agg['success']:
                                 self.insert_sensor(
-                                    umb, section,
+                                    None, section,
                                     agg=True
                                 )
                                 if self.remote:
                                     self.insert_sensor(
-                                        umb, section,
+                                        None, section,
                                         agg=False, remote=True
                                     )
                             else:
