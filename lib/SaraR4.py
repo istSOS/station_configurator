@@ -1,35 +1,24 @@
-#!/usr/bin/env python
-# Copyright (C) 2021 IST-SUPSI (www.supsi.ch/ist)
-# 
-# Author: Daniele Strigaro
-# 
-# This file is part of station_configurator.
-# 
-# station_configurator is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-# 
-# station_configurator is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-# 
-# You should have received a copy of the GNU General Public License
-# along with station_configurator.  If not, see <http://www.gnu.org/licenses/>.
-
 __PLATFORM__=''
 from os import wait
 import os
 import requests
-import logzero
+import logging
 import time
 import sys
 import serial
 from datetime import datetime, timezone
+
+# PIN CONFIGURATION
+PWR_PIN=7
+RST_PIN=11
+RTS_PIN=13
+
 try:
     import Jetson.GPIO as GPIO
     __PLATFORM__='Jetson'
+    PWR_PIN=19
+    RST_PIN=31
+    RTS_PIN=13
 except Exception as e:
     print(str(e))
     try:
@@ -38,18 +27,10 @@ except Exception as e:
     except Exception as e2:
         print(str(e2))
 
-logging = logzero.logger
-
 # SLEEP vars
 TIMEOUT = 1.5
-LTE_SHIELD_POWER_PULSE_PERIOD=3.2
+LTE_SHIELD_POWER_PULSE_PERIOD=1.5
 LTE_RESET_PULSE_PERIOD=10
-
-# PIN CONFIGURATION
-PWR_PIN=7
-RST_PIN=13
-RTS_PIN=11
-CTS_PIN=36
 
 base_path = os.path.abspath(os.getcwd())
 
@@ -62,18 +43,20 @@ def power_off():
     # init GPIO
     GPIO.setmode(GPIO.BOARD)
     mode = GPIO.getmode()
-    GPIO.setup(PWR_PIN, GPIO.OUT, initial=GPIO.LOW)
+    GPIO.setup(PWR_PIN, GPIO.OUT, initial=GPIO.HIGH)
     GPIO.output(PWR_PIN, GPIO.LOW)
+    time.sleep(LTE_SHIELD_POWER_PULSE_PERIOD)
 
 def reset_v1():
     # init GPIO
     power_off()
-    time.sleep(LTE_SHIELD_POWER_PULSE_PERIOD)
+    time.sleep(LTE_RESET_PULSE_PERIOD)
     power_on()
 
 def reset():
     GPIO.setmode(GPIO.BOARD)
     mode = GPIO.getmode()
+    # Set RTS pin down to enable UART communication
     GPIO.setup(RST_PIN, GPIO.OUT, initial=GPIO.HIGH)
     GPIO.output(RST_PIN, GPIO.LOW)
     time.sleep(LTE_RESET_PULSE_PERIOD)
@@ -84,12 +67,13 @@ def power_on():
     # init GPIO
     GPIO.setmode(GPIO.BOARD)
     mode = GPIO.getmode()
-    GPIO.setup(PWR_PIN, GPIO.OUT, initial=GPIO.HIGH)
+    # Set RTS pin down to enable UART communication
     GPIO.setup(RTS_PIN, GPIO.OUT, initial=GPIO.LOW)
-    GPIO.output(PWR_PIN, GPIO.LOW)
+    GPIO.setup(PWR_PIN, GPIO.OUT, initial=GPIO.HIGH)
+    #GPIO.output(PWR_PIN, GPIO.LOW)
     time.sleep(LTE_SHIELD_POWER_PULSE_PERIOD)
     GPIO.output(PWR_PIN, GPIO.HIGH)
-    time.sleep(LTE_SHIELD_POWER_PULSE_PERIOD)
+    time.sleep(LTE_RESET_PULSE_PERIOD)
 
 class SaraR4Module:
 
@@ -103,8 +87,8 @@ class SaraR4Module:
 
     # PIN CONFIGURATION
     PWR_PIN=7
-    RST_PIN=13
-    RTS_PIN=11
+    RST_PIN=11
+    RTS_PIN=13
 
     # SERIAL
     BAUDRATE=115200
@@ -113,8 +97,7 @@ class SaraR4Module:
     # GENERAL
     TIMEOUT = 1.5
 
-    def __init__(self, serial_path=None, DEBUG=False, USB_SERIAL=False, BAUDRATE=9600):
-        self.BAUDRATE = BAUDRATE
+    def __init__(self, serial_path=None, DEBUG=False, USB_SERIAL=False):
         self.DEBUG = DEBUG
         self.USB_SERIAL = USB_SERIAL
         self.ser = None
@@ -128,7 +111,7 @@ class SaraR4Module:
                     serial_success = self.init_usb_serial()
                 if serial_success < 0:
                     logging.info("Trying resetting the device...")
-                    reset()
+                    reset_v1()
                     serial_success = self.init_usb_serial()
                 if serial_success < 0:
                     raise Exception("Device not found")
@@ -157,19 +140,20 @@ class SaraR4Module:
             timeout = 0
             start = time.time()
             resetted = False
+            time.sleep(2)
             while True:
                 try:
-                    self.ser = serial.Serial(
-                        self.serial_path,
-                        baudrate=self.BAUDRATE,
-                        timeout=5,
-                        parity=serial.PARITY_NONE,
-                        stopbits=serial.STOPBITS_ONE,
-                        bytesize=serial.EIGHTBITS
-                    )
-                    if self.at_command("AT", timeout=1):
-                        break
-                    self.ser.close()
+                    try:
+                        self.ser = serial.Serial(
+                            serial_path,
+                            baudrate=self.BAUDRATE,
+                            timeout=5
+                        )
+                        if self.at_command("AT", timeout=1):
+                            break
+                        self.ser.close()
+                    except:
+                        pass
                     time.sleep(1)
                     end = time.time()
                     timeout = end-start
@@ -182,7 +166,7 @@ class SaraR4Module:
                         logging.info("reset")
                         start = time.time()
                         resetted = True
-                        reset()
+                        reset_v1()
                         power_on()
                         time.sleep(3)
                     else:
@@ -201,10 +185,7 @@ class SaraR4Module:
                 self.ser = serial.Serial(
                     self.serial_path,
                     baudrate=self.BAUDRATE,
-                    timeout=5,
-                    parity=serial.PARITY_NONE,
-                    stopbits=serial.STOPBITS_ONE,
-                    bytesize=serial.EIGHTBITS
+                    timeout=5
                 )
                 if self.at_command("AT", timeout=1):
                     break
@@ -239,7 +220,7 @@ class SaraR4Module:
             time.sleep(self.LTE_SHIELD_POWER_PULSE_PERIOD)
 
         if reset:
-            reset()
+            reset_v1()
             time.sleep(self.LTE_SHIELD_POWER_PULSE_PERIOD)
 
         i = 0
@@ -249,16 +230,13 @@ class SaraR4Module:
         elif __PLATFORM__=='Jetson':
             serial_code = 'ttyTHS'
         else:
-            serial_code = 'ttyUSB'
+            serial_code = 'ttyS'
         while i<5:
             try:
                 ser =serial.Serial(
                     f"/dev/tty{serial_code}{i}",
                     baudrate=self.BAUDRATE,
-                    timeout=5,
-                    parity=serial.PARITY_NONE,
-                    stopbits=serial.STOPBITS_ONE,
-                    bytesize=serial.EIGHTBITS
+                    timeout=5
                 )
                 self.ser = ser
                 if self.at_command("AT", timeout=3):
@@ -282,7 +260,7 @@ class SaraR4Module:
             time.sleep(self.LTE_SHIELD_POWER_PULSE_PERIOD)
 
         if reset:
-            reset()
+            reset_v1()
             time.sleep(self.LTE_SHIELD_POWER_PULSE_PERIOD)
 
         i = 0
@@ -292,10 +270,7 @@ class SaraR4Module:
                 self.ser = serial.Serial(
                     f"/dev/ttyUSB{i}",
                     baudrate=self.BAUDRATE,
-                    timeout=5,
-                    parity=serial.PARITY_NONE,
-                    stopbits=serial.STOPBITS_ONE,
-                    bytesize=serial.EIGHTBITS
+                    timeout=5
                 )
                 if self.at_command("AT", timeout=5):
                     logging.info(f"Device found at /dev/ttyUSB{i}")
@@ -321,7 +296,6 @@ class SaraR4Module:
 
     def init(self):
         self.at_command("ATE0")
-        self.at_command("AT+CFUN=1")
         self.at_command("AT+CMEE=2")
         # get module manufacturer
         self.at_command("AT+CGMI")
@@ -342,6 +316,7 @@ class SaraR4Module:
         #
         self.at_command("AT+COPS?")
         #
+        self.at_command("AT+CEREG=2")
         if self.registered():
             self.at_command("AT+CEREG=2")
             #
@@ -571,7 +546,7 @@ class SaraR4Module:
 
     def soft_reset(self):
         self.flush()
-        a = self.at_command("AT+CFUN=15")
+        a = self.at_command("AT+CFUN=15,1")
         time.sleep(30)
         # self.__init__(
         #     '' if "USB" in self.serial_path else self.serial_path,
@@ -615,7 +590,7 @@ class SaraR4Module:
                     logging.error(E04)
                     raise Exception(E04)
             else:
-                if reset():
+                if reset_v1():
                     if self.set_mqtt_clean_session(1):
                         logging.info('MQTT clean session SET correctly')
                     else:
@@ -654,3 +629,4 @@ class SaraR4Module:
                 logging.error(E06)
                 raise Exception(E06)
             retry+=1
+        
