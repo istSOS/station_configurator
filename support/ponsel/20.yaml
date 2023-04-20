@@ -1,0 +1,66 @@
+system_id: null
+system: null
+description: null
+keywords: "ponsel,sensor"
+identification:
+  - name: "uniqueID"
+    definition: "urn:ogc:def:identifier:OGC:uniqueID"
+    value: "urn:ogc:def:procedure:x-istsos:1.0:"
+classification:
+  - name: "System Type"
+    definition: "urn:ogc:def:classifier:x-istsos:1.0:systemType"
+    value: "insitu-fixed-point"
+  - name: "Sensor Type"
+    definition: "urn:ogc:def:classifier:x-istsos:1.0:sensorType"
+    value: null
+characteristics: "https://en.aqualabo.fr/userfiles/doc/User%20Manual%20pH%20digital%20sensor%20PHEHT.pdf"
+contacts: []
+documentation: []
+capabilities: []
+location:
+  type: Feature
+  geometry:
+    type: Point
+    coordinates:
+      - null
+      - null
+      - null
+  crs:
+    type: name
+    properties:
+      name: null
+  properties:
+    name: null
+interfaces: ""
+inputs: []
+outputs:
+  - name: Time
+    definition: "urn:ogc:def:parameter:x-istsos:1.0:time:iso8601"
+    uom: iso8601
+    description: ""
+  - name: "water-temperature"
+    definition: "urn:ogc:def:parameter:x-istsos:1.0:water:temperature"
+    uom: "°C"
+    description: "Water temperature at a fixed depth"
+    constraint:
+      role: "urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable"
+      interval: ["-10", "60"]
+    aggregator: "AVG"
+  - name: "water-pH"
+    definition: "urn:ogc:def:parameter:x-istsos:1.0:water:pH"
+    uom: ""
+    description: "Water pH at a fixed depth"
+    constraint:
+      role: "urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable"
+      interval: ["0", "14"]
+    aggregator: "AVG"
+  - name: "water-ORP"
+    definition: "urn:ogc:def:parameter:x-istsos:1.0:water:ORP"
+    uom: "mV"
+    description: "Water redox at a fixed depth"
+    constraint:
+      role: "urn:ogc:def:classifiers:x-istsos:1.0:qualityIndex:check:reasonable"
+      interval: ["-1000", "1000"]
+    aggregator: "AVG"
+history: []
+mqtt: null
