@@ -1,0 +1,34 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: A Python software to collect data from sensors
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Daniele
+    family-names: Strigaro
+    email: daniele.strigaro@supsi.ch
+    affiliation: >-
+      Institute of Earth Sciences, DACD, University of
+      Applied Sciences of Southern Switzerland (SUPSI)
+    orcid: 'https://orcid.org/0000-0002-7040-4364'
+  - given-names: Massimiliano
+    family-names: Cannata
+    email: massimiliano.cannata@supsi.ch
+    affiliation: >-
+      Institute of Earth Sciences, DACD, University of
+      Applied Sciences of Southern Switzerland (SUPSI)
+    orcid: 'https://orcid.org/0000-0003-2527-1416'
+  - {}
+repository-code: 'https://github.com/istSOS/station_configurator'
+abstract: "\_Easy-to-use configurator to monitor environmental parameters with professional instruments."
+keywords:
+  - SOS
+  - IoT
+  - datalogger
+license: GPL-3.0
+version: v0.1
+date-released: 2024-04-30
