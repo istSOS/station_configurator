@@ -22,7 +22,6 @@ authors:
       Institute of Earth Sciences, DACD, University of
       Applied Sciences of Southern Switzerland (SUPSI)
     orcid: 'https://orcid.org/0000-0003-2527-1416'
-  - {}
 repository-code: 'https://github.com/istSOS/station_configurator'
 abstract: "\_Easy-to-use configurator to monitor environmental parameters with professional instruments."
 keywords:
